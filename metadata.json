@@ -1,0 +1,5 @@
+{
+  "name": "QuizMaster AI",
+  "description": "A premium quiz application featuring Excel question uploads, AI-generated quizzes via Gemini, customizable timers, and stunning visual analytics.",
+  "requestFramePermissions": []
+}
