@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import Button from './Button';
 import { loginWithGoogle, loginAsGuest } from '../services/firebase';
 import { User } from '../types';
-import { Globe, User as UserIcon } from 'lucide-react';
+import { Globe, User as UserIcon, AlertCircle } from 'lucide-react';
 
 interface AuthFormProps {
   onLogin: (user: User) => void;
@@ -19,9 +20,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
       const user = await loginWithGoogle();
       onLogin(user);
     } catch (err: any) {
-      // Friendly error message for configuration issues
-      setError("Unable to connect to Google. Please check if your Firebase API Key is configured in Vercel.");
-      console.error(err);
+      console.error("Login Error:", err);
+      
+      let msg = "Login failed. ";
+      if (err.code === 'auth/unauthorized-domain') {
+        msg = "Domain not authorized. Go to Firebase Console > Authentication > Settings > Authorized Domains and add this website's URL.";
+      } else if (err.code === 'auth/api-key-not-valid') {
+        msg = "Invalid API Key. Please check your Vercel Environment Variables.";
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        msg = "Sign-in cancelled.";
+      } else if (err.message) {
+        msg = err.message;
+      }
+      
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -34,7 +46,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
       const user = await loginAsGuest();
       onLogin(user);
     } catch (err: any) {
-      setError("Guest login failed.");
+      setError("Guest login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -56,8 +68,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
 
       <div className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-xs text-center">
-            {error}
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-200 text-xs flex gap-2 items-start">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -93,3 +106,4 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
 };
 
 export default AuthForm;
+
