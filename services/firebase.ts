@@ -1,4 +1,4 @@
-/// <reference types="vite/client" />
+
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
@@ -32,9 +32,9 @@ import { BADGES } from "../constants";
 // Robust helper to get env var from either import.meta.env (Vite) or process.env (Vercel/Node)
 const getEnv = (key: string) => {
   // @ts-ignore
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
      // @ts-ignore
-     return import.meta.env[key];
+     return (import.meta as any).env[key];
   }
   // @ts-ignore
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
