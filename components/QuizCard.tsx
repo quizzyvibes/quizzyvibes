@@ -24,10 +24,10 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
         {/* 
            UPDATES: 
            1. min-h-[140px] for mobile.
-           2. Increased font size: text-2xl on mobile (was text-xl).
+           2. Increased font size: text-2xl (mobile) / text-4xl (desktop).
         */}
         <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[110px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
-            <h2 className="text-2xl md:text-2xl lg:text-3xl font-display font-bold text-white leading-snug text-center">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
@@ -77,8 +77,11 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 }`}>
                   {String.fromCharCode(65 + idx)}
                 </div>
-                {/* Responsive font size for options - Added pr-8 to ensure text doesn't overlap absolute icon */}
-                <span className="text-lg md:text-xl font-semibold leading-tight pr-8">{option}</span>
+                {/* 
+                   UPDATED: Added 'pr-10' ALWAYS to reserve space for the icon. 
+                   This prevents text from reflowing (and increasing height) when the icon appears.
+                */}
+                <span className="text-lg md:text-xl font-semibold leading-tight pr-10">{option}</span>
                 {icon}
               </button>
             );
@@ -90,6 +93,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
