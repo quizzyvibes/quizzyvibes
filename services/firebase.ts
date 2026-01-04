@@ -1,11 +1,11 @@
+
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
   signOut,
-  onAuthStateChanged,
-  User as FirebaseUser 
+  onAuthStateChanged
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -27,25 +27,9 @@ import { BADGES } from "../constants";
 
 // --- CONFIGURATION ---
 
-// Robust helper to get env variables across different environments
-const getEnv = (key: string): string => {
-  // Try import.meta.env (Vite standard)
+const getEnv = (key: string) => {
   // @ts-ignore
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
-    // @ts-ignore
-    return import.meta.env[key];
-  }
-  
-  // Try process.env (Polyfilled via vite.config.ts define)
-  // @ts-ignore
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    // @ts-ignore
-    return process.env[key];
-  }
-
-  // Debug log if missing (only in dev)
-  console.warn(`Missing config: ${key}`);
-  return '';
+  return (import.meta as any).env?.[key] || (typeof process !== 'undefined' ? process.env?.[key] : undefined);
 };
 
 const firebaseConfig = {
@@ -58,8 +42,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+// @ts-ignore
 const app = initializeApp(firebaseConfig);
+// @ts-ignore
 export const auth = getAuth(app);
+// @ts-ignore
 export const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
@@ -200,8 +187,6 @@ export const updateUserAvatar = async (base64: string) => {
     await updateDoc(userRef, { avatar: base64 });
 };
 
-// --- ADMIN HELPERS ---
-
 export const getAllUsersFromCloud = async (): Promise<User[]> => {
     const snapshot = await getDocs(collection(db, "users"));
     return snapshot.docs.map(doc => doc.data() as User);
@@ -211,3 +196,4 @@ export const getAllResultsFromCloud = async (): Promise<QuizResult[]> => {
     const snapshot = await getDocs(collection(db, "results"));
     return snapshot.docs.map(doc => doc.data() as QuizResult);
 };
+
