@@ -1,3 +1,4 @@
+
 /// <reference types="vite/client" />
 import { initializeApp } from "firebase/app";
 import { 
@@ -28,19 +29,39 @@ import { BADGES } from "../constants";
 
 // --- CONFIGURATION ---
 
-// Use standard Vite env access
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+// Robust helper to get env var from either import.meta.env (Vite) or process.env (Vercel/Node)
+const getEnv = (key: string) => {
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+     // @ts-ignore
+     return import.meta.env[key];
+  }
+  // @ts-ignore
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+     // @ts-ignore
+     return process.env[key];
+  }
+  return "";
 };
 
-// Simple check to warn in console if keys are missing
+const firebaseConfig = {
+  apiKey: getEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: getEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getEnv('VITE_FIREBASE_APP_ID')
+};
+
+// Console check to assist debugging (Keys masked)
+console.log("Firebase Config Status:", {
+  hasApiKey: !!firebaseConfig.apiKey,
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId
+});
+
 if (!firebaseConfig.apiKey) {
-  console.warn("Firebase API Key is missing! Check your Vercel Environment Variables.");
+  console.error("CRITICAL: Firebase API Key is missing. Check Vercel Environment Variables.");
 }
 
 // Initialize Firebase
@@ -72,7 +93,7 @@ export const loginWithGoogle = async (): Promise<User> => {
       return newUser;
     }
   } catch (error) {
-    console.error("Login failed", error);
+    // We throw here so the UI component can display the specific error message
     throw error;
   }
 };
@@ -255,4 +276,5 @@ export const getAllResultsFromCloud = async (): Promise<QuizResult[]> => {
         return [];
     }
 };
+
 
