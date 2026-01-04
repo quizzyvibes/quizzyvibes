@@ -2,7 +2,7 @@
 import React from 'react';
 import { Difficulty, User } from '../types';
 import { Settings, Clock, BarChart3, ListOrdered, Music, Volume2, Upload, Lock, ShieldAlert, Trash2, Unlock, FileSpreadsheet, List, Zap } from 'lucide-react';
-import { SUBJECT_PRESETS } from '../constants';
+import { SUBJECT_PRESETS, ADMIN_EMAIL } from '../constants';
 
 interface SettingsPanelProps {
   user: User | null;
@@ -30,8 +30,6 @@ interface SettingsPanelProps {
   activeSubjectIds?: string[];
   onToggleSubject?: (id: string) => void;
 }
-
-const ADMIN_EMAIL = 'admin@quizzyvibes.com';
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
   user,
@@ -142,12 +140,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 {timer === 0 ? 'OFF' : 'ON'}
             </span>
             </label>
-            <div className="grid grid-cols-4 gap-2">
-                {[0, 5, 10, 15].map(t => (
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {[0, 5, 10, 15, 30, 60].map(t => (
                     <button
                         key={t}
                         onClick={() => setTimer(t)}
-                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors border ${
+                        className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors border ${
                             timer === t 
                             ? 'bg-cyan-700 text-white border-cyan-600 shadow-lg shadow-cyan-500/20' 
                             : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'
@@ -373,3 +371,4 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 };
 
 export default SettingsPanel;
+
