@@ -1047,16 +1047,16 @@ function App() {
                 <Button 
                   onClick={resetQuiz} 
                   variant="secondary" 
-                  className="flex-1 h-20 text-xl font-bold border-2 rounded-2xl"
+                  className="flex-1 h-16 text-lg font-bold border-2 rounded-2xl"
                 >
-                  <RefreshCw className="mr-3" size={28} /> Play Again
+                  <RefreshCw className="mr-3" size={24} /> Play Again
                 </Button>
                 
                 <Button 
                   onClick={() => setView('leaderboard')} 
-                  className="flex-1 h-20 text-xl font-bold bg-black border-2 border-slate-900 text-yellow-400 hover:bg-slate-900 shadow-lg rounded-2xl"
+                  className="flex-1 h-16 text-lg font-bold bg-black border-2 border-slate-900 text-yellow-400 hover:bg-slate-900 shadow-lg rounded-2xl"
                 >
-                    <Trophy className="mr-3" size={28} /> Rank
+                    <Trophy className="mr-3" size={24} /> Rank
                 </Button>
             </div>
         </div>
@@ -1153,6 +1153,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
