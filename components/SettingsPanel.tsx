@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Difficulty, User } from '../types';
 import { Settings, Clock, BarChart3, ListOrdered, Music, Volume2, Upload, Lock, ShieldAlert, Trash2, Unlock, FileSpreadsheet, List, Zap } from 'lucide-react';
@@ -63,13 +62,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       {!isAdmin && isConfigLocked && (
         <div className="absolute inset-0 z-20 bg-slate-950/70 backdrop-blur-[2px] rounded-3xl flex flex-col items-center justify-center text-center p-6 border border-slate-800/50">
            <Lock size={48} className="text-slate-500 mb-4" />
-           <h3 className="text-xl font-bold text-white mb-2">Settings Locked</h3>
-           <p className="text-slate-400 text-sm">The quiz configuration has been set by the host.</p>
+           <h3 className="text-2xl font-bold text-white mb-2">Settings Locked</h3>
+           <p className="text-slate-400 text-base">The quiz configuration has been set by the host.</p>
         </div>
       )}
 
-      <h3 className="text-xl font-bold text-white flex items-center gap-3 pb-2 border-b border-slate-800/50">
-        <Settings className="text-blue-400" size={24} />
+      <h3 className="text-2xl font-bold text-white flex items-center gap-3 pb-2 border-b border-slate-800/50">
+        <Settings className="text-blue-400" size={28} />
         Game Settings
       </h3>
       
@@ -78,8 +77,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         
         {/* Difficulty */}
         <div className="mb-8">
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-200 mb-3">
-                <BarChart3 size={18} className="text-blue-400" /> Difficulty Level
+            <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+                <BarChart3 size={20} className="text-blue-400" /> Difficulty Level
             </label>
             <div className="flex gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
             {[Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD].map((level) => {
@@ -93,7 +92,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <button
                     key={level}
                     onClick={() => setDifficulty(level)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all duration-300 ${
+                    className={`flex-1 py-3 px-3 rounded-xl text-sm md:text-base font-bold transition-all duration-300 ${
                         isActive 
                         ? activeClass
                         : 'text-slate-400 hover:text-slate-200'
@@ -108,17 +107,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
         {/* Question Count */}
         <div className="mb-8">
-            <label className="flex items-center gap-3 text-sm font-bold text-slate-200 mb-4">
+            <label className="flex items-center gap-3 text-base font-bold text-slate-200 mb-4">
             <span className="flex items-center gap-2">
-                <ListOrdered size={18} className="text-blue-400"/> 
+                <ListOrdered size={20} className="text-blue-400"/> 
                 Question Count
             </span>
-            <span className="bg-blue-500/20 text-blue-300 px-2.5 py-0.5 rounded-md font-mono text-xs border border-blue-500/30">
+            <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-md font-mono text-sm border border-blue-500/30">
                 {count}
             </span>
             </label>
             <div className="flex items-center gap-4 px-1">
-                <span className="font-mono text-xs font-bold text-slate-500">5</span>
+                <span className="font-mono text-sm font-bold text-slate-500">5</span>
                 <input 
                 type="range" 
                 min="5" 
@@ -126,16 +125,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 step="5"
                 value={count} 
                 onChange={(e) => setCount(Number(e.target.value))}
-                className="flex-1 h-2 bg-slate-950 border border-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
+                className="flex-1 h-3 bg-slate-950 border border-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
                 />
-                <span className="font-mono text-xs font-bold text-slate-500">50</span>
+                <span className="font-mono text-sm font-bold text-slate-500">50</span>
             </div>
         </div>
 
         {/* Timer */}
         <div className="mb-8">
-            <label className="flex justify-between items-center text-sm font-bold text-slate-200 mb-3">
-            <span className="flex items-center gap-2"><Clock size={18} className="text-blue-400" /> Timer (sec)</span>
+            <label className="flex justify-between items-center text-base font-bold text-slate-200 mb-3">
+            <span className="flex items-center gap-2"><Clock size={20} className="text-blue-400" /> Timer (sec)</span>
             <span className={`text-xs font-bold px-2 py-0.5 rounded ${timer === 0 ? 'text-slate-500' : 'text-cyan-300 bg-cyan-900/30'}`}>
                 {timer === 0 ? 'OFF' : 'ON'}
             </span>
@@ -145,7 +144,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <button
                         key={t}
                         onClick={() => setTimer(t)}
-                        className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors border ${
+                        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors border ${
                             timer === t 
                             ? 'bg-cyan-700 text-white border-cyan-600 shadow-lg shadow-cyan-500/20' 
                             : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'
@@ -158,40 +157,40 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
 
         {/* Lifelines Toggle */}
-        <div className="mb-8 p-3 rounded-xl border border-slate-700 bg-slate-900/40 flex items-center justify-between">
+        <div className="mb-8 p-4 rounded-xl border border-slate-700 bg-slate-900/40 flex items-center justify-between">
            <div className="flex items-center gap-3">
-               <div className="p-2 bg-indigo-500/20 text-indigo-300 rounded-lg">
-                   <Zap size={18} />
+               <div className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-lg">
+                   <Zap size={20} />
                </div>
                <div>
-                   <div className="text-sm font-bold text-white">Power-ups</div>
-                   <div className="text-[10px] text-slate-400">Enable 50/50 & Freeze</div>
+                   <div className="text-base font-bold text-white">Power-ups</div>
+                   <div className="text-xs text-slate-400">Enable 50/50 & Freeze</div>
                </div>
            </div>
            <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" checked={lifelinesEnabled} onChange={(e) => setLifelinesEnabled(e.target.checked)} className="sr-only peer" />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+              <div className="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-500"></div>
            </label>
         </div>
 
         {/* Audio Controls */}
-        <div className="space-y-4 pt-2 border-t border-slate-800/50">
-            <label className="text-sm font-bold text-slate-200 flex items-center gap-2">
-            <Volume2 size={18} className="text-blue-400" /> Audio Settings
+        <div className="space-y-4 pt-4 border-t border-slate-800/50">
+            <label className="text-base font-bold text-slate-200 flex items-center gap-2">
+            <Volume2 size={20} className="text-blue-400" /> Audio Settings
             </label>
 
             <div className="grid grid-cols-2 gap-3">
                 {/* Toggles */}
                 <button 
                 onClick={() => setMusicEnabled(!musicEnabled)}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
                     musicEnabled 
                     ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
                     : 'bg-slate-900/50 border-slate-800 text-slate-500'
                 }`}
                 >
-                <Music size={18} />
-                <span className="text-xs font-bold flex items-center gap-1">
+                <Music size={24} />
+                <span className="text-sm font-bold flex items-center gap-1">
                     Music 
                     <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${musicEnabled ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
                         {musicEnabled ? 'ON' : 'OFF'}
@@ -201,14 +200,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
                 <button 
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
                     soundEnabled 
                     ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
                     : 'bg-slate-900/50 border-slate-800 text-slate-500'
                 }`}
                 >
-                <Volume2 size={18} />
-                <span className="text-xs font-bold flex items-center gap-1">
+                <Volume2 size={24} />
+                <span className="text-sm font-bold flex items-center gap-1">
                     SFX 
                     <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${soundEnabled ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
                         {soundEnabled ? 'ON' : 'OFF'}
@@ -225,16 +224,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div className="absolute top-2 right-2 text-red-500/10 group-hover:text-red-500/20 transition-colors">
                     <ShieldAlert size={64} />
                 </div>
-                <h4 className="text-red-400 font-bold text-xs uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Lock size={12} /> Admin Control Center
+                <h4 className="text-red-400 font-bold text-sm uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Lock size={14} /> Admin Control Center
                 </h4>
                 
                 <div className="space-y-4 relative z-10 mt-4">
 
                      {/* Manage Categories */}
                      <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-200 mb-3">
-                           <List size={14} className="text-yellow-400" /> Manage Categories
+                        <div className="flex items-center gap-2 text-sm font-bold text-slate-200 mb-3">
+                           <List size={16} className="text-yellow-400" /> Manage Categories
                         </div>
                         <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
                            {SUBJECT_PRESETS.map(subject => {
@@ -243,7 +242,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                  <button 
                                     key={subject.id}
                                     onClick={() => onToggleSubject && onToggleSubject(subject.id)}
-                                    className={`px-2 py-1.5 rounded text-[10px] font-bold text-left truncate transition-colors border ${
+                                    className={`px-3 py-2 rounded text-xs font-bold text-left truncate transition-colors border ${
                                        isActive 
                                         ? 'bg-blue-500/20 border-blue-500/50 text-blue-200' 
                                         : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'
@@ -264,8 +263,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                 {isConfigLocked ? <Lock size={16} /> : <Unlock size={16} />}
                              </div>
                              <div>
-                                <div className="text-xs font-bold text-slate-200">Lock Config</div>
-                                <div className="text-[10px] text-slate-400">Prevent players changing settings</div>
+                                <div className="text-sm font-bold text-slate-200">Lock Config</div>
+                                <div className="text-xs text-slate-400">Prevent players changing settings</div>
                              </div>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
@@ -275,93 +274,33 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     </div>
 
                     {/* Question Bank Upload */}
-                    <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+                    <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                                <FileSpreadsheet size={14} className="text-green-400"/> Question Bank (Excel)
+                            <span className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                                <FileSpreadsheet size={16} className="text-green-400"/> Question Bank (Excel)
                             </span>
                         </div>
+                        <p className="text-xs text-green-400/80 mb-3">Syncs globally to all connected users.</p>
                         
                         {customFileName ? (
-                            <div className="space-y-2">
-                                <div className="p-2 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-2 text-xs text-green-300">
-                                    <FileSpreadsheet size={16} />
+                            <div className="space-y-3">
+                                <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-2 text-sm text-green-300 font-bold">
+                                    <FileSpreadsheet size={18} />
                                     <span className="truncate flex-1">{customFileName}</span>
                                 </div>
-                                <button onClick={onRemoveQuestions} className="w-full py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors">
+                                <button onClick={onRemoveQuestions} className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors">
                                     <Trash2 size={14} /> Clear Bank & Reset
                                 </button>
                             </div>
                         ) : (
                             <div>
-                                <p className="text-[10px] text-slate-400 mb-2">Upload .xlsx file to override all questions.</p>
-                                <label className="flex items-center justify-center gap-2 w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition-colors text-xs text-slate-300 font-bold">
-                                    <Upload size={14} /> Upload Excel
+                                <p className="text-xs text-slate-400 mb-3">Upload .xlsx file to override all questions.</p>
+                                <label className="flex items-center justify-center gap-2 w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition-colors text-sm text-slate-300 font-bold">
+                                    <Upload size={16} /> Upload & Sync Excel
                                     <input type="file" accept=".xlsx, .xls" onChange={handleQuestionFileChange} className="hidden" />
                                 </label>
                             </div>
                         )}
-                    </div>
-
-                    <div className="border-t border-slate-700/50 my-2"></div>
-
-                    {/* Asset Control (Existing) */}
-                    <div className="space-y-2">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Audio Assets</p>
-                        {/* Music */}
-                        <div className="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                             <div className="flex items-center gap-2 overflow-hidden">
-                                <Music size={14} className="text-blue-400 flex-shrink-0" />
-                                <span className="text-xs text-slate-400 truncate">{customAudioNames.music || 'Default'}</span>
-                             </div>
-                             <div className="flex items-center gap-1">
-                                <label className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded cursor-pointer text-slate-300">
-                                    <Upload size={12} />
-                                    <input type="file" accept="audio/*" onChange={handleFileChange('music')} className="hidden" />
-                                </label>
-                                {customAudioNames.music && (
-                                    <button onClick={() => onRemoveAudio('music')} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 rounded text-red-400">
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
-                             </div>
-                        </div>
-                        {/* Tick */}
-                        <div className="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                             <div className="flex items-center gap-2 overflow-hidden">
-                                <Volume2 size={14} className="text-blue-400 flex-shrink-0" />
-                                <span className="text-xs text-slate-400 truncate">{customAudioNames.tick ? 'Custom Tick' : 'Default Tick'}</span>
-                             </div>
-                             <div className="flex items-center gap-1">
-                                <label className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded cursor-pointer text-slate-300">
-                                    <Upload size={12} />
-                                    <input type="file" accept="audio/*" onChange={handleFileChange('tick')} className="hidden" />
-                                </label>
-                                {customAudioNames.tick && (
-                                    <button onClick={() => onRemoveAudio('tick')} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 rounded text-red-400">
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
-                             </div>
-                        </div>
-                         {/* Finish */}
-                         <div className="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                             <div className="flex items-center gap-2 overflow-hidden">
-                                <Volume2 size={14} className="text-blue-400 flex-shrink-0" />
-                                <span className="text-xs text-slate-400 truncate">{customAudioNames.finish ? 'Custom Finish' : 'Default Finish'}</span>
-                             </div>
-                             <div className="flex items-center gap-1">
-                                <label className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded cursor-pointer text-slate-300">
-                                    <Upload size={12} />
-                                    <input type="file" accept="audio/*" onChange={handleFileChange('finish')} className="hidden" />
-                                </label>
-                                {customAudioNames.finish && (
-                                    <button onClick={() => onRemoveAudio('finish')} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 rounded text-red-400">
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
-                             </div>
-                        </div>
                     </div>
                 </div>
             </div>
