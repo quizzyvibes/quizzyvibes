@@ -27,7 +27,7 @@ import { BADGES } from "../constants";
 
 // --- CONFIGURATION ---
 
-// Robust helper to get env variables across different environments (Vite, simplified builds, etc)
+// Robust helper to get env variables across different environments
 const getEnv = (key: string): string => {
   // Try import.meta.env (Vite standard)
   // @ts-ignore
@@ -95,7 +95,6 @@ export const logout = async () => {
   await signOut(auth);
 };
 
-// Listen for auth changes (Reloads app state when user logs in/out)
 export const subscribeToAuth = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
@@ -104,7 +103,6 @@ export const subscribeToAuth = (callback: (user: User | null) => void) => {
       if (snap.exists()) {
         callback(snap.data() as User);
       } else {
-        // Fallback for edge cases
         callback({
           username: fbUser.displayName || "User",
           email: fbUser.email || "",
@@ -128,20 +126,20 @@ export const saveResultToCloud = async (result: QuizResult) => {
     const userId = auth.currentUser.uid;
     const userRef = doc(db, "users", userId);
 
-    // 1. Save Result Document
+    // 1. Save Result
     await addDoc(collection(db, "results"), {
       ...result,
       userId: userId
     });
 
-    // 2. Fetch current user data to calc badges
+    // 2. Fetch current user data
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) return { updatedUser: null, newBadges: [] };
     
     const userData = userSnap.data() as User;
     const previousBadges = new Set(userData.badges);
     
-    // 3. Fetch all user results to calc cumulative badges
+    // 3. Fetch all user results
     const q = query(collection(db, "results"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
     const userResults = querySnapshot.docs.map(d => d.data() as QuizResult);
@@ -164,7 +162,7 @@ export const saveResultToCloud = async (result: QuizResult) => {
     if (!previousBadges.has('dedicated') && userResults.length >= 10) 
       newBadges.push(BADGES.find(b => b.id === 'dedicated')!);
 
-    // 5. Update User if badges earned
+    // 5. Update User
     if (newBadges.length > 0) {
       const newBadgeIds = newBadges.map(b => b.id);
       await updateDoc(userRef, {
@@ -190,7 +188,6 @@ export const getUserResultsFromCloud = async (email: string): Promise<QuizResult
 };
 
 export const getCloudLeaderboardData = async () => {
-    // Top 20 scores globally
     const q = query(collection(db, "results"), orderBy("score", "desc"), limit(20));
     const snapshot = await getDocs(q);
     const topScores = snapshot.docs.map(doc => doc.data() as QuizResult);
@@ -201,4 +198,16 @@ export const updateUserAvatar = async (base64: string) => {
     if (!auth.currentUser) return;
     const userRef = doc(db, "users", auth.currentUser.uid);
     await updateDoc(userRef, { avatar: base64 });
+};
+
+// --- ADMIN HELPERS ---
+
+export const getAllUsersFromCloud = async (): Promise<User[]> => {
+    const snapshot = await getDocs(collection(db, "users"));
+    return snapshot.docs.map(doc => doc.data() as User);
+};
+
+export const getAllResultsFromCloud = async (): Promise<QuizResult[]> => {
+    const snapshot = await getDocs(collection(db, "results"));
+    return snapshot.docs.map(doc => doc.data() as QuizResult);
 };
