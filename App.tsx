@@ -498,8 +498,7 @@ function App() {
         if (musicEnabled) {
             music.volume = 1.0; 
             music.currentTime = 0;
-            // Always force load before play in a user-interaction callback to ensure readiness
-            music.load(); 
+            // Removed music.load() to prevent interruption if already ready
             const p = music.play();
             if (p !== undefined) {
                p.then(() => console.log("Music started"))
@@ -511,7 +510,7 @@ function App() {
         if (soundEnabled) {
             // Ticks
             tick.volume = 1.0;
-            tick.load();
+            // tick.load(); // Removed redundant load
             tick.muted = true;
             tick.play().then(() => {
                 tick.pause();
@@ -521,7 +520,7 @@ function App() {
 
             // Finish
             finish.volume = 1.0;
-            finish.load();
+            // finish.load(); // Removed redundant load
             finish.muted = true;
             finish.play().then(() => {
                 finish.pause();
@@ -1055,7 +1054,7 @@ function App() {
                 
                 <Button 
                   onClick={() => setView('leaderboard')} 
-                  className="flex-1 h-20 text-xl font-bold bg-slate-800 border-2 border-slate-600 text-yellow-400 hover:bg-slate-700 hover:border-yellow-500/50 shadow-lg rounded-2xl"
+                  className="flex-1 h-20 text-xl font-bold bg-black border-2 border-slate-900 text-yellow-400 hover:bg-slate-900 shadow-lg rounded-2xl"
                 >
                     <Trophy className="mr-3" size={28} /> Rank
                 </Button>
@@ -1154,6 +1153,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
