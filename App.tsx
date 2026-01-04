@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Brain, ArrowRight, RefreshCw, Trophy, XCircle, Sparkles,
@@ -106,7 +105,8 @@ function App() {
   const customTickRef = useRef<HTMLAudioElement | null>(null);
   const customFinishRef = useRef<HTMLAudioElement | null>(null);
 
-  const isAdmin = currentUser?.email?.toLowerCase().trim() === ADMIN_EMAIL;
+  // Safely check for admin since guest users might not have email
+  const isAdmin = currentUser?.email && currentUser.email.toLowerCase().trim() === ADMIN_EMAIL;
 
   useEffect(() => {
     const unsubscribe = subscribeToAuth((user) => {
