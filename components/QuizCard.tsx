@@ -23,11 +23,11 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
         {/* Dedicated Framed Question Box */}
         {/* 
            UPDATES: 
-           1. min-h-[140px] for mobile (Adjusted from 220px based on feedback).
-           2. md:min-h-[110px] keeps PC/Tablet compact.
+           1. min-h-[140px] for mobile.
+           2. Increased font size: text-2xl on mobile (was text-xl).
         */}
         <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[110px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-white leading-snug text-center">
+            <h2 className="text-2xl md:text-2xl lg:text-3xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
@@ -44,10 +44,12 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
               // On reveal, maintain same size and layout
               if (option === question.correctAnswer) {
                 buttonStyle = "bg-green-600/20 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]";
-                icon = <CheckCircle2 size={24} className="ml-auto text-green-400 flex-shrink-0" />;
+                // Absolute position icon to prevent expansion
+                icon = <CheckCircle2 size={24} className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400" />;
               } else if (option === selectedAnswer && option !== question.correctAnswer) {
                 buttonStyle = "bg-red-600/20 border-red-500 text-red-200 opacity-90";
-                icon = <AlertCircle size={24} className="ml-auto text-red-400 flex-shrink-0" />;
+                // Absolute position icon to prevent expansion
+                icon = <AlertCircle size={24} className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400" />;
               } else {
                  buttonStyle = "opacity-40 bg-slate-900/20 border-slate-800 grayscale";
               }
@@ -75,8 +77,8 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 }`}>
                   {String.fromCharCode(65 + idx)}
                 </div>
-                {/* Responsive font size for options */}
-                <span className="text-lg md:text-xl font-semibold leading-tight pr-2">{option}</span>
+                {/* Responsive font size for options - Added pr-8 to ensure text doesn't overlap absolute icon */}
+                <span className="text-lg md:text-xl font-semibold leading-tight pr-8">{option}</span>
                 {icon}
               </button>
             );
@@ -88,6 +90,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
