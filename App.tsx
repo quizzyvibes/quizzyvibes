@@ -17,11 +17,11 @@ import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
 import AdminDashboard from './components/AdminDashboard';
 
-import { subscribeToAuth, logout, saveResultToCloud, subscribeToGlobalConfig, saveGlobalQuizConfig } from './services/firebase';
+import { subscribeToAuth, logout, saveResultToCloud, subscribeToGlobalConfig, saveGlobalQuizConfig, GlobalConfig } from './services/firebase';
 import { loadQuestionsForTopic } from './services/questionLoader';
 import { parseQuestionFile } from './services/fileService';
 import { SUBJECT_PRESETS, DEFAULT_QUESTION_COUNT, DEFAULT_TIMER_SECONDS, DEFAULT_DIFFICULTY, ADMIN_EMAIL } from './constants';
-import { QuizConfig, QuizState, User, Badge, Question, Difficulty } from './types';
+import { QuizConfig, QuizState, User, Badge, Question, Difficulty, SubjectPreset } from './types';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Brain, Globe, FlaskConical, Utensils, Calculator, Cpu,
@@ -111,11 +111,11 @@ function App() {
   const isAdmin = currentUser?.email && currentUser.email.toLowerCase().trim() === ADMIN_EMAIL;
 
   useEffect(() => {
-    const unsubscribe = subscribeToGlobalConfig((config) => {
+    const unsubscribe = subscribeToGlobalConfig((config: GlobalConfig | null) => {
         if (config) {
             setCustomQuestions(config.questions);
             setCustomFileName(config.fileName);
-            setHasCustomSubjects(config.questions.some(q => !!q.subject));
+            setHasCustomSubjects(config.questions.some((q: Question) => !!q.subject));
             if (config.activeSubjectIds && config.activeSubjectIds.length > 0) {
                 setActiveSubjectIds(config.activeSubjectIds);
             }
@@ -125,7 +125,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = subscribeToAuth((user) => {
+    const unsubscribe = subscribeToAuth((user: User | null) => {
       setCurrentUser(user);
       setLoadingAuth(false);
     });
@@ -167,16 +167,21 @@ function App() {
         bgMusicRef.current = new Audio(DEFAULT_BG_MUSIC);
         bgMusicRef.current.loop = true;
         bgMusicRef.current.volume = 0.5;
+        // Important for mobile to attempt to load metadata
+        bgMusicRef.current.preload = 'auto';
+        bgMusicRef.current.crossOrigin = 'anonymous'; 
     }
     const targetSrc = customAudio.music || DEFAULT_BG_MUSIC;
     // Check strict inequality to prevent reloading same src
     if (bgMusicRef.current.src !== targetSrc && bgMusicRef.current.src !== window.location.origin + "/" + targetSrc) {
         bgMusicRef.current.src = targetSrc;
+        bgMusicRef.current.load(); // Reload if source changes
     }
 
     // Tick
     if (customAudio.tick) {
         customTickRef.current = new Audio(customAudio.tick);
+        customTickRef.current.preload = 'auto';
     } else {
         customTickRef.current = null;
     }
@@ -184,6 +189,7 @@ function App() {
     // Finish
     if (customAudio.finish) {
         customFinishRef.current = new Audio(customAudio.finish);
+        customFinishRef.current.preload = 'auto';
     } else {
         customFinishRef.current = null;
     }
@@ -195,11 +201,14 @@ function App() {
     if (!bgMusic) return;
 
     if (musicEnabled && view === 'quiz') {
-       bgMusic.play().catch(e => console.log("Audio play prevented:", e));
+       const p = bgMusic.play();
+       if (p !== undefined) {
+           p.catch(e => console.log("Audio play prevented (background):", e));
+       }
     } else {
        bgMusic.pause();
     }
-  }, [musicEnabled, view, customAudio.music]); // Depend on customAudio.music to restart if file changes during quiz
+  }, [musicEnabled, view, customAudio.music]); 
 
   const handleUploadAudio = (type: 'music' | 'tick' | 'finish', file: File) => {
     const url = URL.createObjectURL(file);
@@ -226,7 +235,8 @@ function App() {
     if (!soundEnabled) return;
     if (customTickRef.current) {
         customTickRef.current.currentTime = 0;
-        customTickRef.current.play().catch(e => console.warn("Tick play error", e));
+        const p = customTickRef.current.play();
+        if (p !== undefined) p.catch(e => console.warn("Tick play error", e));
     }
   }, [soundEnabled]);
 
@@ -234,7 +244,8 @@ function App() {
     if (!soundEnabled) return;
     if (customFinishRef.current) {
         customFinishRef.current.currentTime = 0;
-        customFinishRef.current.play().catch(console.warn);
+        const p = customFinishRef.current.play();
+        if (p !== undefined) p.catch(console.warn);
     }
   }, [soundEnabled]);
 
@@ -246,11 +257,11 @@ function App() {
       setCustomQuestions(questions);
       setCustomFileName(file.name);
       
-      const hasSubjects = questions.some(q => !!q.subject);
+      const hasSubjects = questions.some((q: Question) => !!q.subject);
       setHasCustomSubjects(hasSubjects);
 
       if (!hasSubjects) {
-          setConfig(prev => ({ ...prev, questionCount: Math.min(questions.length, 50) }));
+          setConfig((prev: QuizConfig) => ({ ...prev, questionCount: Math.min(questions.length, 50) }));
       }
 
       if (isAdmin) {
@@ -268,7 +279,7 @@ function App() {
     setCustomQuestions(null);
     setCustomFileName(null);
     setHasCustomSubjects(false);
-    setConfig(prev => ({ ...prev, questionCount: DEFAULT_QUESTION_COUNT }));
+    setConfig((prev: QuizConfig) => ({ ...prev, questionCount: DEFAULT_QUESTION_COUNT }));
   };
 
   const [config, setConfig] = useState<QuizConfig>({
@@ -295,8 +306,8 @@ function App() {
   // UPDATE: Reset functionality clears selection and scrolls up
   const resetQuiz = () => {
     setView('welcome');
-    // Ensure Count goes back to DEFAULT (10)
-    setConfig(prev => ({ ...prev, subject: '', questionCount: DEFAULT_QUESTION_COUNT })); 
+    // Ensure Count goes back to DEFAULT (10) explicitly
+    setConfig((prev: QuizConfig) => ({ ...prev, subject: '', questionCount: 10 })); 
     setQuizState({
       currentQuestionIndex: 0,
       score: 0,
@@ -333,7 +344,7 @@ function App() {
   };
 
   const handleSubjectSelect = (subjectId: string) => {
-    setConfig(prev => ({ ...prev, subject: subjectId }));
+    setConfig((prev: QuizConfig) => ({ ...prev, subject: subjectId }));
     setError(null);
     setTimeout(() => {
       if (settingsRef.current) {
@@ -396,11 +407,11 @@ function App() {
     if (customQuestions && customQuestions.length > 0) {
         let filteredPool = customQuestions;
         if (hasCustomSubjects) {
-            filteredPool = filteredPool.filter(q => q.subject === config.subject);
+            filteredPool = filteredPool.filter((q: Question) => q.subject === config.subject);
         }
-        const hasDifficulty = filteredPool.some(q => !!q.difficulty);
+        const hasDifficulty = filteredPool.some((q: Question) => !!q.difficulty);
         if (hasDifficulty) {
-            filteredPool = filteredPool.filter(q => q.difficulty === config.difficulty);
+            filteredPool = filteredPool.filter((q: Question) => q.difficulty === config.difficulty);
         }
 
         if (filteredPool.length === 0) {
@@ -419,8 +430,6 @@ function App() {
     } else {
       const rawQuestions = loadQuestionsForTopic(config.subject, config.difficulty);
       if (rawQuestions.length === 0) {
-        // This won't trigger if subject is empty, because of the first check.
-        // It triggers if subject is selected but file has no questions for that category.
         setError(`No hardwired questions found for ${config.subject} (${config.difficulty}). Please upload questions.`);
         return;
       }
@@ -434,12 +443,31 @@ function App() {
        return;
     }
 
-    setConfig(prev => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
+    setConfig((prev: QuizConfig) => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
     
-    // Explicitly play music if enabled
+    // MOBILE AUDIO FIX: Explicit play on interaction
     if (musicEnabled && bgMusicRef.current) {
-      bgMusicRef.current.currentTime = 0;
-      bgMusicRef.current.play().catch(console.warn);
+        bgMusicRef.current.currentTime = 0;
+        const p = bgMusicRef.current.play();
+        if (p !== undefined) {
+            p.catch(e => console.warn("Music play blocked", e));
+        }
+    }
+    
+    if (soundEnabled) {
+        // Unlock strategy: Play and immediately pause to warm up the element
+        const unlock = (audio: HTMLAudioElement) => {
+            const p = audio.play();
+            if (p !== undefined) {
+                p.then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(e => console.warn("SFX Unlock blocked", e));
+            }
+        };
+
+        if (customTickRef.current) unlock(customTickRef.current);
+        if (customFinishRef.current) unlock(customFinishRef.current);
     }
 
     setView('quiz');
@@ -544,7 +572,7 @@ function App() {
   };
 
   const renderWelcome = () => {
-    const filteredPresets = SUBJECT_PRESETS.filter(p => 
+    const filteredPresets = SUBJECT_PRESETS.filter((p: SubjectPreset) => 
       activeSubjectIds.includes(p.id) && 
       (p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
        p.description.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -609,14 +637,14 @@ function App() {
                         type="text" 
                         placeholder="Search subjects..." 
                         value={searchTerm}
-                        onChange={(e) => { setSearchTerm(e.target.value); setCategoryPage(0); }}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setSearchTerm(e.target.value); setCategoryPage(0); }}
                         className="w-full bg-slate-900/60 border border-slate-700 rounded-2xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500"
                     />
                 </div>
             )}
 
             <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 transition-opacity duration-300 min-h-[320px] content-start ${customQuestions && !hasCustomSubjects ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-              {displayedPresets.length > 0 ? displayedPresets.map(preset => {
+              {displayedPresets.length > 0 ? displayedPresets.map((preset: SubjectPreset) => {
                 const Icon = ICON_MAP[preset.icon] || Brain;
                 const isSelected = config.subject === preset.id;
                 return (
@@ -683,17 +711,17 @@ function App() {
               <SettingsPanel 
                   user={currentUser}
                   count={config.questionCount}
-                  setCount={(val) => setConfig(prev => ({...prev, questionCount: val}))}
+                  setCount={(val: number) => setConfig((prev: QuizConfig) => ({...prev, questionCount: val}))}
                   timer={config.timerSeconds}
-                  setTimer={(val) => setConfig(prev => ({...prev, timerSeconds: val}))}
+                  setTimer={(val: number) => setConfig((prev: QuizConfig) => ({...prev, timerSeconds: val}))}
                   difficulty={config.difficulty}
-                  setDifficulty={(val) => setConfig(prev => ({...prev, difficulty: val}))}
+                  setDifficulty={(val: Difficulty) => setConfig((prev: QuizConfig) => ({...prev, difficulty: val}))}
                   musicEnabled={musicEnabled}
                   setMusicEnabled={setMusicEnabled}
                   soundEnabled={soundEnabled}
                   setSoundEnabled={setSoundEnabled}
                   lifelinesEnabled={config.lifelinesEnabled}
-                  setLifelinesEnabled={(val) => setConfig(prev => ({...prev, lifelinesEnabled: val}))}
+                  setLifelinesEnabled={(val: boolean) => setConfig((prev: QuizConfig) => ({...prev, lifelinesEnabled: val}))}
                   onUploadAudio={handleUploadAudio}
                   onRemoveAudio={handleRemoveAudio}
                   customAudioNames={customAudioNames}
@@ -944,7 +972,7 @@ function App() {
                 <Button onClick={() => setView('result')} variant="outline"><XCircle className="mr-2" size={18} /> Close</Button>
             </div>
             <div className="space-y-6">
-                {config.questions.map((q, idx) => {
+                {config.questions.map((q: Question, idx: number) => {
                     const userAnswer = quizState.answers[idx];
                     const isCorrect = userAnswer === q.correctAnswer;
                     return (
@@ -1000,7 +1028,7 @@ function App() {
               user={currentUser} 
               onLogout={handleLogout} 
               currentView={view} 
-              onChangeView={(v) => { setError(null); setView(v); }} 
+              onChangeView={(v: any) => { setError(null); setView(v); }} 
             />
         )}
         
@@ -1024,6 +1052,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
