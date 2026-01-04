@@ -1,9 +1,10 @@
-
+/// <reference types="vite/client" />
 import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInAnonymously,
   signOut,
   onAuthStateChanged
 } from "firebase/auth";
@@ -27,26 +28,24 @@ import { BADGES } from "../constants";
 
 // --- CONFIGURATION ---
 
-const getEnv = (key: string) => {
-  // @ts-ignore
-  return (import.meta as any).env?.[key] || (typeof process !== 'undefined' ? process.env?.[key] : undefined);
+// Use standard Vite env access
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const firebaseConfig = {
-  apiKey: getEnv('VITE_FIREBASE_API_KEY'),
-  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN'),
-  projectId: getEnv('VITE_FIREBASE_PROJECT_ID'),
-  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: getEnv('VITE_FIREBASE_APP_ID')
-};
+// Simple check to warn in console if keys are missing
+if (!firebaseConfig.apiKey) {
+  console.warn("Firebase API Key is missing! Check your Vercel Environment Variables.");
+}
 
 // Initialize Firebase
-// @ts-ignore
 const app = initializeApp(firebaseConfig);
-// @ts-ignore
 export const auth = getAuth(app);
-// @ts-ignore
 export const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
@@ -64,7 +63,7 @@ export const loginWithGoogle = async (): Promise<User> => {
     } else {
       const newUser: User = {
         username: fbUser.displayName || "Anonymous",
-        email: fbUser.email || "",
+        email: fbUser.email || `anon_${fbUser.uid}@quizzy.com`,
         joinedAt: new Date().toISOString(),
         badges: [],
         avatar: fbUser.photoURL || undefined
@@ -78,6 +77,34 @@ export const loginWithGoogle = async (): Promise<User> => {
   }
 };
 
+export const loginAsGuest = async (): Promise<User> => {
+  try {
+    const result = await signInAnonymously(auth);
+    const fbUser = result.user;
+    
+    // Guest users don't necessarily need a DB entry immediately, 
+    // but we create a local User object for the app state.
+    const guestUser: User = {
+      username: "Guest Player",
+      email: "", // Empty email for guests
+      joinedAt: new Date().toISOString(),
+      badges: [],
+      avatar: undefined 
+    };
+    
+    return guestUser;
+  } catch (error) {
+    console.error("Guest login failed", error);
+    // Fallback if Firebase fails completely
+    return {
+        username: "Guest Player",
+        email: "",
+        joinedAt: new Date().toISOString(),
+        badges: []
+    };
+  }
+};
+
 export const logout = async () => {
   await signOut(auth);
 };
@@ -85,18 +112,34 @@ export const logout = async () => {
 export const subscribeToAuth = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
+      if (fbUser.isAnonymous) {
+          callback({
+            username: "Guest Player",
+            email: "",
+            joinedAt: new Date().toISOString(),
+            badges: []
+          });
+          return;
+      }
+
       const userRef = doc(db, "users", fbUser.uid);
-      const snap = await getDoc(userRef);
-      if (snap.exists()) {
-        callback(snap.data() as User);
-      } else {
-        callback({
-          username: fbUser.displayName || "User",
-          email: fbUser.email || "",
-          joinedAt: new Date().toISOString(),
-          badges: [],
-          avatar: fbUser.photoURL || undefined
-        });
+      try {
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          callback(snap.data() as User);
+        } else {
+          // Fallback if auth exists but firestore doc doesn't
+          callback({
+            username: fbUser.displayName || "User",
+            email: fbUser.email || "",
+            joinedAt: new Date().toISOString(),
+            badges: [],
+            avatar: fbUser.photoURL || undefined
+          });
+        }
+      } catch (e) {
+         console.warn("Could not fetch user profile", e);
+         callback(null);
       }
     } else {
       callback(null);
@@ -108,7 +151,10 @@ export const subscribeToAuth = (callback: (user: User | null) => void) => {
 
 export const saveResultToCloud = async (result: QuizResult) => {
   try {
-    if (!auth.currentUser) return { updatedUser: null, newBadges: [] };
+    if (!auth.currentUser || auth.currentUser.isAnonymous) {
+        // We don't save guest results to cloud permanently in this version
+        return { updatedUser: null, newBadges: [] };
+    }
     
     const userId = auth.currentUser.uid;
     const userRef = doc(db, "users", userId);
@@ -167,7 +213,7 @@ export const saveResultToCloud = async (result: QuizResult) => {
 };
 
 export const getUserResultsFromCloud = async (email: string): Promise<QuizResult[]> => {
-    if (!auth.currentUser) return [];
+    if (!auth.currentUser || auth.currentUser.isAnonymous) return [];
     
     const q = query(collection(db, "results"), where("userId", "==", auth.currentUser.uid));
     const snapshot = await getDocs(q);
@@ -175,25 +221,38 @@ export const getUserResultsFromCloud = async (email: string): Promise<QuizResult
 };
 
 export const getCloudLeaderboardData = async () => {
-    const q = query(collection(db, "results"), orderBy("score", "desc"), limit(20));
-    const snapshot = await getDocs(q);
-    const topScores = snapshot.docs.map(doc => doc.data() as QuizResult);
-    return { topScores, rankedUsers: [] }; 
+    try {
+        const q = query(collection(db, "results"), orderBy("score", "desc"), limit(20));
+        const snapshot = await getDocs(q);
+        const topScores = snapshot.docs.map(doc => doc.data() as QuizResult);
+        return { topScores, rankedUsers: [] }; 
+    } catch (e) {
+        console.warn("Leaderboard fetch failed (likely missing index or permissions)", e);
+        return { topScores: [], rankedUsers: [] };
+    }
 };
 
 export const updateUserAvatar = async (base64: string) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || auth.currentUser.isAnonymous) return;
     const userRef = doc(db, "users", auth.currentUser.uid);
     await updateDoc(userRef, { avatar: base64 });
 };
 
 export const getAllUsersFromCloud = async (): Promise<User[]> => {
-    const snapshot = await getDocs(collection(db, "users"));
-    return snapshot.docs.map(doc => doc.data() as User);
+    try {
+        const snapshot = await getDocs(collection(db, "users"));
+        return snapshot.docs.map(doc => doc.data() as User);
+    } catch (e) {
+        return [];
+    }
 };
 
 export const getAllResultsFromCloud = async (): Promise<QuizResult[]> => {
-    const snapshot = await getDocs(collection(db, "results"));
-    return snapshot.docs.map(doc => doc.data() as QuizResult);
+    try {
+        const snapshot = await getDocs(collection(db, "results"));
+        return snapshot.docs.map(doc => doc.data() as QuizResult);
+    } catch (e) {
+        return [];
+    }
 };
 
