@@ -30,10 +30,10 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 const CATEGORY_STORAGE_KEY = 'quizmaster_active_categories';
 
-// Audio Assets
-const DEFAULT_BG_MUSIC = "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=cyberpunk-2099-10586.mp3"; 
-const DEFAULT_TICK_SOUND = "https://cdn.pixabay.com/download/audio/2022/03/24/audio_824f9c5458.mp3?filename=tick-tock-clock-timer-104840.mp3"; 
-const DEFAULT_FINISH_SOUND = "https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c153e2.mp3?filename=success-1-6297.mp3";
+// Shorter, more reliable audio URLs
+const DEFAULT_BG_MUSIC = "https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3"; 
+const DEFAULT_TICK_SOUND = "https://cdn.pixabay.com/audio/2022/03/24/audio_824f9c5458.mp3"; 
+const DEFAULT_FINISH_SOUND = "https://cdn.pixabay.com/audio/2021/08/04/audio_0625c153e2.mp3";
 
 const ITEMS_PER_PAGE = 4; 
 
@@ -166,26 +166,24 @@ function App() {
 
   // --- AUDIO LOGIC ---
 
-  // NOTE: We only use useEffect for toggling enabled/disabled state or cleaning up.
-  // Actual playback start is handled in handleStartQuiz to satisfy mobile browser policies.
+  // NOTE: Only using useEffect to handle LIVE toggling (Mute/Unmute) while quiz is running.
+  // Initial playback is handled by the Start button to satisfy iOS Safari.
   useEffect(() => {
-    const bgMusic = bgMusicRef.current;
-    if (!bgMusic) return;
-
     if (view === 'quiz') {
-        if (musicEnabled) {
-             // If we are already in quiz and user toggles on, we play.
-             // (We check .paused to prevent glitches if it's already playing)
-             if (bgMusic.paused) {
-                 bgMusic.play().catch(e => console.log("Music play blocked (effect):", e));
-             }
-        } else {
-             bgMusic.pause();
-        }
+       if (bgMusicRef.current) {
+         if (musicEnabled) {
+             // Try to resume if it was paused
+             bgMusicRef.current.play().catch(() => {});
+         } else {
+             bgMusicRef.current.pause();
+         }
+       }
     } else {
-        // If not in quiz, ensure stopped
-        bgMusic.pause();
-        bgMusic.currentTime = 0;
+       // Stop music if leaving quiz
+       if (bgMusicRef.current) {
+         bgMusicRef.current.pause();
+         bgMusicRef.current.currentTime = 0;
+       }
     }
   }, [musicEnabled, view]);
 
@@ -213,10 +211,10 @@ function App() {
     if (!soundEnabled || !tickRef.current) return;
     const audio = tickRef.current;
     
-    // Reset and Play
+    // Simple play attempt
     audio.currentTime = 0;
-    const p = audio.play();
-    if (p !== undefined) p.catch(e => console.warn("Tick play error", e));
+    audio.muted = false; // Ensure unmuted
+    audio.play().catch(() => {});
 
   }, [soundEnabled]);
 
@@ -225,8 +223,8 @@ function App() {
     const audio = finishRef.current;
     
     audio.currentTime = 0;
-    const p = audio.play();
-    if (p !== undefined) p.catch(console.warn);
+    audio.muted = false;
+    audio.play().catch(() => {});
 
   }, [soundEnabled]);
 
@@ -375,33 +373,41 @@ function App() {
   const handleStartQuiz = () => {
     setError(null);
 
-    // 1. MOBILE AUDIO UNLOCK - MUST BE FIRST
-    // We play audio synchronously inside the click handler to satisfy iOS Safari / Chrome policies.
-    if (musicEnabled && bgMusicRef.current) {
-         bgMusicRef.current.volume = 0.5; 
-         // DIRECT PLAY CALL
-         bgMusicRef.current.play().catch(e => console.warn("Music play blocked (handler):", e));
+    // --- MOBILE AUDIO FIX: The "Double Tap" Strategy ---
+    // We execute play() immediately inside this user-initiated event.
+    
+    // 1. Music
+    if (bgMusicRef.current) {
+        if (musicEnabled) {
+            bgMusicRef.current.volume = 0.5;
+            // Force play immediately
+            const p = bgMusicRef.current.play();
+            if (p !== undefined) p.catch(e => console.error("Music start error", e));
+        } else {
+            bgMusicRef.current.pause();
+        }
     }
 
-    if (soundEnabled) {
-        // We "warm up" the SFX elements by playing them muted for a microsecond.
-        // This whitelists them for programmatic playback later.
-        [tickRef.current, finishRef.current].forEach(el => {
-            if (el) {
-                el.volume = 0; // Silent unlock
-                const p = el.play();
-                if (p !== undefined) {
-                    p.then(() => {
-                        el.pause();
-                        el.currentTime = 0;
-                        el.volume = 1; // Restore volume
-                    }).catch(() => {});
-                }
+    // 2. SFX (Warm up)
+    // We play them muted for a tiny fraction of a second to "unlock" them for later programmatic use
+    [tickRef.current, finishRef.current].forEach(audio => {
+        if (audio && soundEnabled) {
+            audio.muted = true; // Mute so user doesn't hear the warmup
+            const p = audio.play();
+            if (p !== undefined) {
+                p.then(() => {
+                    // Once playing started, immediately pause and reset
+                    setTimeout(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.muted = false; // Unmute for the real event
+                    }, 50); // 50ms delay to ensure browser registers "playing" state
+                }).catch(e => console.error("SFX unlock error", e));
             }
-        });
-    }
+        }
+    });
 
-    // 2. Configuration Validation
+    // 3. Configuration Validation
     if (!config.subject && !customQuestions) {
         setError("Click Go To Top & Choose a Subject");
         return;
@@ -448,7 +454,7 @@ function App() {
        return;
     }
 
-    // 3. State Update
+    // 4. State Update
     setConfig((prev: QuizConfig) => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
     setView('quiz');
     setQuizState(prev => ({ 
@@ -1009,13 +1015,14 @@ function App() {
         </main>
         
         {/* DOM Audio Elements for robust mobile playback */}
+        {/* Note: Added playsInline and muted attributes to help with policy quirks */}
         <audio 
             ref={bgMusicRef} 
             src={customAudio.music || DEFAULT_BG_MUSIC} 
             loop 
             preload="auto" 
             crossOrigin="anonymous" 
-            playsInline // Help with mobile
+            playsInline
         />
         <audio 
             ref={tickRef} 
@@ -1036,6 +1043,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
