@@ -21,9 +21,14 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
         {/* Dedicated Framed Question Box */}
-        {/* Updated: Reduced min-height on md (160px -> 110px). Added md:max-w-4xl md:mx-auto to reduce width on PC/Tablet. */}
-        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[100px] md:min-h-[110px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-white leading-snug text-center">
+        {/* 
+           UPDATES: 
+           1. min-h-[220px] for mobile (was 100px) to fit long questions.
+           2. md:min-h-[110px] keeps PC/Tablet compact.
+           3. Text increased to text-2xl on mobile.
+        */}
+        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[220px] md:min-h-[110px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
+            <h2 className="text-2xl md:text-2xl lg:text-3xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
@@ -65,15 +70,15 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 disabled={showFeedback}
                 className={`relative w-full py-3 md:py-3.5 px-4 md:px-6 rounded-xl text-left border-2 transition-all duration-200 flex items-center group ${buttonStyle}`}
               >
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base font-bold mr-4 border-2 transition-colors ${
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold mr-4 border-2 transition-colors ${
                    showFeedback && option === question.correctAnswer ? 'border-green-400 bg-green-500/20 text-green-300' : 
                    showFeedback && option === selectedAnswer ? 'border-red-400 bg-red-500/20 text-red-300' :
                    'border-slate-600 bg-slate-800/50 text-slate-400 group-hover:border-blue-400 group-hover:text-blue-200'
                 }`}>
                   {String.fromCharCode(65 + idx)}
                 </div>
-                {/* Responsive font size for options */}
-                <span className="text-base md:text-lg font-semibold leading-tight pr-2">{option}</span>
+                {/* Responsive font size for options - INCREASED for all versions */}
+                <span className="text-lg md:text-xl font-semibold leading-tight pr-2">{option}</span>
                 {icon}
               </button>
             );
@@ -85,6 +90,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
