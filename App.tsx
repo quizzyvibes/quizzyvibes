@@ -5,7 +5,7 @@ import {
   Globe, FlaskConical, Utensils, Calculator, Cpu, AlertCircle, FileSpreadsheet, CheckCircle2,
   Cat, Rocket, HeartPulse, Music, Scroll, HelpCircle, Sprout, ChefHat, ChevronLeft, ChevronRight,
   Share2, Link as LinkIcon, Facebook, Twitter, Linkedin, Mail, MessageCircle,
-  Zap, Snowflake, Eye, Check, X, Search, HardDrive, ArrowUp, Info
+  Zap, Snowflake, Eye, Check, X, Search, HardDrive, ArrowUp, Info, PlayCircle
 } from 'lucide-react';
 
 import Button from './components/Button';
@@ -109,10 +109,49 @@ function App() {
   
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // Use refs to access the DOM audio elements
-  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
-  const tickRef = useRef<HTMLAudioElement | null>(null);
-  const finishRef = useRef<HTMLAudioElement | null>(null);
+  // --- AUDIO SYSTEM (Native JS Objects) ---
+  // We use refs to hold pure JS Audio objects. This detaches them from the React Render Cycle.
+  // This is crucial for mobile, so re-renders don't kill the playback instance.
+  const audioSystem = useRef<{
+    music: HTMLAudioElement;
+    tick: HTMLAudioElement;
+    finish: HTMLAudioElement;
+  } | null>(null);
+
+  // Initialize Audio Objects ONCE
+  useEffect(() => {
+    // create only if not exists
+    if (!audioSystem.current) {
+        audioSystem.current = {
+            music: new Audio(DEFAULT_BG_MUSIC),
+            tick: new Audio(DEFAULT_TICK_SOUND),
+            finish: new Audio(DEFAULT_FINISH_SOUND)
+        };
+        
+        // Config
+        audioSystem.current.music.loop = true;
+        audioSystem.current.music.preload = 'auto';
+        audioSystem.current.tick.preload = 'auto';
+        audioSystem.current.finish.preload = 'auto';
+    }
+
+    return () => {
+        // Cleanup on unmount
+        if (audioSystem.current) {
+            audioSystem.current.music.pause();
+            audioSystem.current.tick.pause();
+            audioSystem.current.finish.pause();
+        }
+    };
+  }, []);
+
+  // Sync sources if custom audio changes
+  useEffect(() => {
+     if (!audioSystem.current) return;
+     if (customAudio.music) audioSystem.current.music.src = customAudio.music;
+     if (customAudio.tick) audioSystem.current.tick.src = customAudio.tick;
+     if (customAudio.finish) audioSystem.current.finish.src = customAudio.finish;
+  }, [customAudio]);
 
   const isAdmin = currentUser?.email && currentUser.email.toLowerCase().trim() === ADMIN_EMAIL;
 
@@ -164,25 +203,22 @@ function App() {
     setCurrentUser(updatedUser);
   };
 
-  // --- AUDIO LOGIC ---
+  // --- AUDIO LOGIC HANDLERS ---
 
-  // NOTE: This effect ONLY handles stopping music when leaving the view or if user toggles off.
-  // It does NOT start music. Starting music is done in handleStartQuiz to ensure mobile compatibility.
+  // Handle Mute/Unmute logic dynamically
   useEffect(() => {
-    const audio = bgMusicRef.current;
-    if (!audio) return;
+    const sys = audioSystem.current;
+    if (!sys) return;
 
     if (view === 'quiz') {
-       if (!musicEnabled) {
-           audio.pause();
-       } else if (audio.paused && audio.currentTime > 0) {
-           // Only resume if we were previously playing and user toggled it back on
-           audio.play().catch(() => {});
+       if (musicEnabled) {
+          if (sys.music.paused) sys.music.play().catch(() => {});
+       } else {
+          sys.music.pause();
        }
     } else {
-       // Stop music if leaving quiz
-       audio.pause();
-       audio.currentTime = 0;
+       sys.music.pause();
+       sys.music.currentTime = 0;
     }
   }, [musicEnabled, view]);
 
@@ -207,27 +243,36 @@ function App() {
   };
 
   const playTick = useCallback(() => {
-    if (!soundEnabled || !tickRef.current) return;
-    const audio = tickRef.current;
-    
-    // Simple play attempt
-    audio.currentTime = 0;
-    audio.muted = false; // Ensure unmuted
-    audio.volume = 1.0;
-    audio.play().catch(() => {});
-
+    if (!soundEnabled || !audioSystem.current) return;
+    const { tick } = audioSystem.current;
+    tick.currentTime = 0;
+    tick.play().catch(() => {});
   }, [soundEnabled]);
 
   const playFinishSound = useCallback(() => {
-    if (!soundEnabled || !finishRef.current) return;
-    const audio = finishRef.current;
-    
-    audio.currentTime = 0;
-    audio.muted = false;
-    audio.volume = 1.0;
-    audio.play().catch(() => {});
-
+    if (!soundEnabled || !audioSystem.current) return;
+    const { finish } = audioSystem.current;
+    finish.currentTime = 0;
+    finish.play().catch(() => {});
   }, [soundEnabled]);
+
+  // Test Audio Function (for debugging)
+  const handleTestAudio = () => {
+      if (!audioSystem.current) return;
+      
+      // Play tick
+      audioSystem.current.tick.currentTime = 0;
+      audioSystem.current.tick.play().then(() => {
+          setTimeout(() => {
+            // Play a snippet of music
+             if (audioSystem.current) {
+                 audioSystem.current.music.volume = 1;
+                 audioSystem.current.music.play().catch(e => alert("Music failed: " + e));
+                 setTimeout(() => audioSystem.current?.music.pause(), 2000);
+             }
+          }, 500);
+      }).catch(e => alert("Audio failed to play. Check device volume/silent mode. Error: " + e));
+  };
 
   // --- QUIZ LOGIC ---
 
@@ -301,9 +346,10 @@ function App() {
     setError(null);
     setEarnedBadges([]);
     
-    if (bgMusicRef.current) {
-      bgMusicRef.current.pause();
-      bgMusicRef.current.currentTime = 0;
+    // Stop Music on Reset
+    if (audioSystem.current) {
+        audioSystem.current.music.pause();
+        audioSystem.current.music.currentTime = 0;
     }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -374,42 +420,39 @@ function App() {
   const handleStartQuiz = () => {
     setError(null);
 
-    // --- MOBILE AUDIO FIX: Synchronous Play ---
-    // We do NOT rely on useEffect to start playback. We do it right here in the click handler.
+    // --- MOBILE AUDIO FIX: Synchronous Play using Ref Objects ---
+    // We execute play() immediately on the Audio objects stored in the ref.
+    // Since these objects are NOT in the DOM/JSX, they persist through the 'setView' re-render.
     
-    // 1. Music
-    const musicAudio = bgMusicRef.current;
-    if (musicAudio && musicEnabled) {
-        musicAudio.currentTime = 0;
-        musicAudio.volume = 1.0; 
-        musicAudio.muted = false;
-        
-        // Force load to ensure buffer is ready
-        musicAudio.load(); 
-        
-        // Return promise but don't await to avoid UI block
-        const p = musicAudio.play();
-        if (p !== undefined) {
-             p.catch(e => console.error("Music start error (user likely needs to interact)", e));
+    if (audioSystem.current) {
+        const { music, tick, finish } = audioSystem.current;
+
+        // 1. Start Music (if enabled)
+        if (musicEnabled) {
+            music.volume = 1.0; 
+            music.currentTime = 0;
+            const p = music.play();
+            if (p !== undefined) p.catch(e => console.error("Music play blocked", e));
+        }
+
+        // 2. Warm up SFX (Play then immediate pause)
+        // This "unlocks" the audio context for these specific audio objects
+        if (soundEnabled) {
+            tick.muted = true;
+            tick.play().then(() => {
+                tick.pause();
+                tick.currentTime = 0;
+                tick.muted = false;
+            }).catch(() => {});
+
+            finish.muted = true;
+            finish.play().then(() => {
+                finish.pause();
+                finish.currentTime = 0;
+                finish.muted = false;
+            }).catch(() => {});
         }
     }
-
-    // 2. SFX (Warm up hack for iOS)
-    // We play them muted for a tiny fraction of a second to "whitelist" them.
-    [tickRef.current, finishRef.current].forEach(audio => {
-        if (audio && soundEnabled) {
-            audio.muted = true; 
-            audio.load(); // Force load
-            const p = audio.play();
-            if (p !== undefined) {
-                p.then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.muted = false; // Prepare for real playback
-                }).catch(e => console.error("SFX unlock error", e));
-            }
-        }
-    });
 
     // 3. Configuration Validation
     if (!config.subject && !customQuestions) {
@@ -550,8 +593,9 @@ function App() {
       }
       setView('result');
       
-      if (bgMusicRef.current) {
-        bgMusicRef.current.pause();
+      // Stop Music
+      if (audioSystem.current) {
+         audioSystem.current.music.pause();
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -722,7 +766,14 @@ function App() {
                   onToggleSubject={handleToggleSubject}
               />
 
-              <div className="mt-8 pb-4">
+              {/* Added Test Audio Button for Debugging */}
+              <div className="flex justify-end mt-2">
+                 <button onClick={handleTestAudio} className="text-xs text-blue-400 hover:text-white flex items-center gap-1 underline decoration-dotted">
+                     <PlayCircle size={12} /> Test Audio
+                 </button>
+              </div>
+
+              <div className="mt-6 pb-4">
                 <Button 
                   fullWidth 
                   onClick={handleStartQuiz} 
@@ -1017,33 +1068,12 @@ function App() {
             {view === 'leaderboard' && <Leaderboard />}
             {view === 'admin' && <AdminDashboard />}
         </main>
-        
-        {/* DOM Audio Elements for robust mobile playback */}
-        {/* Note: Added playsInline and muted attributes to help with policy quirks */}
-        <audio 
-            ref={bgMusicRef} 
-            src={customAudio.music || DEFAULT_BG_MUSIC} 
-            loop 
-            preload="auto" 
-            playsInline
-        />
-        <audio 
-            ref={tickRef} 
-            src={customAudio.tick || DEFAULT_TICK_SOUND} 
-            preload="auto" 
-            playsInline
-        />
-        <audio 
-            ref={finishRef} 
-            src={customAudio.finish || DEFAULT_FINISH_SOUND} 
-            preload="auto" 
-            playsInline
-        />
     </div>
   );
 }
 
 export default App;
+
 
 
 
