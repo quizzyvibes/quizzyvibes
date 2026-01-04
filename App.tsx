@@ -30,13 +30,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 const CATEGORY_STORAGE_KEY = 'quizmaster_active_categories';
 
-// Audio Assets - Switched to highly reliable Google Storage URLs (MP3)
-// Updated to a softer "Memories" piano track
+// Audio Assets
 const DEFAULT_BG_MUSIC = "https://codeskulptor-demos.commondatastorage.googleapis.com/bensound/bensound-memories.mp3"; 
 const DEFAULT_TICK_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3"; 
 const DEFAULT_FINISH_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/orders/coins.mp3";
 
-// Increased to 8 to show 2 rows on desktop (4 columns x 2 rows)
 const ITEMS_PER_PAGE = 8; 
 
 const Confetti = () => {
@@ -108,100 +106,16 @@ function App() {
 
   const [hiddenOptions, setHiddenOptions] = useState<string[]>([]);
   const [isTimeFrozen, setIsTimeFrozen] = useState(false);
-  
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // --- AUDIO SYSTEM (Native JS Objects) ---
-  const audioSystem = useRef<{
-    music: HTMLAudioElement;
-    tick: HTMLAudioElement;
-    finish: HTMLAudioElement;
-  } | null>(null);
-
-  // Track the actual string URLs we have loaded to avoid the browser's .src property normalization issues
-  const currentSources = useRef<{ music: string; tick: string; finish: string }>({
-    music: '',
-    tick: '',
-    finish: ''
-  });
-
-  // Initialize Audio Objects ONCE
-  useEffect(() => {
-    if (!audioSystem.current) {
-        const music = new Audio(DEFAULT_BG_MUSIC);
-        const tick = new Audio(DEFAULT_TICK_SOUND);
-        const finish = new Audio(DEFAULT_FINISH_SOUND);
-
-        // Add error listeners to help debug issues
-        [music, tick, finish].forEach(a => {
-            a.addEventListener('error', (e) => {
-                const target = e.target as HTMLAudioElement;
-                console.warn(`Audio Error for ${target.src}:`, target.error);
-            });
-        });
-
-        audioSystem.current = { music, tick, finish };
-        
-        // Initial Source State
-        currentSources.current = {
-            music: DEFAULT_BG_MUSIC,
-            tick: DEFAULT_TICK_SOUND,
-            finish: DEFAULT_FINISH_SOUND
-        };
-
-        // Config
-        audioSystem.current.music.loop = true;
-        // Important: Setting preloads
-        audioSystem.current.music.preload = 'auto';
-        audioSystem.current.tick.preload = 'auto';
-        audioSystem.current.finish.preload = 'auto';
-    }
-
-    return () => {
-        // Cleanup on unmount
-        if (audioSystem.current) {
-            audioSystem.current.music.pause();
-            audioSystem.current.tick.pause();
-            audioSystem.current.finish.pause();
-        }
-    };
-  }, []);
-
-  // Sync sources if custom audio changes
-  // FIXED: We now compare against currentSources ref, not the DOM element's src property
-  useEffect(() => {
-     if (!audioSystem.current) return;
-     const sys = audioSystem.current;
-
-     // 1. Music
-     const targetMusic = customAudio.music || DEFAULT_BG_MUSIC;
-     if (currentSources.current.music !== targetMusic) {
-         sys.music.src = targetMusic;
-         sys.music.load();
-         currentSources.current.music = targetMusic;
-         console.log("Music source updated:", targetMusic);
-     }
-
-     // 2. Tick
-     const targetTick = customAudio.tick || DEFAULT_TICK_SOUND;
-     if (currentSources.current.tick !== targetTick) {
-         sys.tick.src = targetTick;
-         sys.tick.load();
-         currentSources.current.tick = targetTick;
-     }
-
-     // 3. Finish
-     const targetFinish = customAudio.finish || DEFAULT_FINISH_SOUND;
-     if (currentSources.current.finish !== targetFinish) {
-         sys.finish.src = targetFinish;
-         sys.finish.load();
-         currentSources.current.finish = targetFinish;
-     }
-
-  }, [customAudio]);
+  // --- HTML Audio Refs (Reliable) ---
+  const musicRef = useRef<HTMLAudioElement>(null);
+  const tickRef = useRef<HTMLAudioElement>(null);
+  const finishRef = useRef<HTMLAudioElement>(null);
 
   const isAdmin = currentUser?.email && currentUser.email.toLowerCase().trim() === ADMIN_EMAIL;
 
+  // Global Config Sub
   useEffect(() => {
     const unsubscribe = subscribeToGlobalConfig((config: GlobalConfig | null) => {
         if (config) {
@@ -216,6 +130,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Auth Sub
   useEffect(() => {
     const unsubscribe = subscribeToAuth((user: User | null) => {
       setCurrentUser(user);
@@ -224,6 +139,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // LocalStorage for Categories
   useEffect(() => {
     const storedCats = localStorage.getItem(CATEGORY_STORAGE_KEY);
     if (storedCats) {
@@ -250,25 +166,25 @@ function App() {
     setCurrentUser(updatedUser);
   };
 
-  // --- AUDIO LOGIC HANDLERS ---
+  // --- AUDIO LOGIC ---
 
-  // Handle Mute/Unmute logic dynamically
+  // Control Music Play/Pause based on View & Setting
   useEffect(() => {
-    const sys = audioSystem.current;
-    if (!sys) return;
-
-    if (view === 'quiz') {
-       if (musicEnabled) {
-          // If already playing, do nothing. If paused, try play.
-          if (sys.music.paused) sys.music.play().catch(() => {});
-       } else {
-          sys.music.pause();
-       }
+    if (!musicRef.current) return;
+    
+    if (view === 'quiz' && musicEnabled) {
+        // Attempt to play if not playing
+        if (musicRef.current.paused) {
+            musicRef.current.play().catch(e => console.log("Autoplay waiting for interaction"));
+        }
     } else {
-       sys.music.pause();
-       sys.music.currentTime = 0;
+        // Stop music if not in quiz or disabled
+        musicRef.current.pause();
+        if (view !== 'quiz') {
+            musicRef.current.currentTime = 0;
+        }
     }
-  }, [musicEnabled, view]);
+  }, [view, musicEnabled]);
 
   const handleUploadAudio = (type: 'music' | 'tick' | 'finish', file: File) => {
     const url = URL.createObjectURL(file);
@@ -291,45 +207,28 @@ function App() {
   };
 
   const playTick = useCallback(() => {
-    if (!soundEnabled || !audioSystem.current) return;
-    const { tick } = audioSystem.current;
-    tick.currentTime = 0;
-    tick.play().catch(() => {});
+    if (!soundEnabled || !tickRef.current) return;
+    tickRef.current.currentTime = 0;
+    tickRef.current.play().catch(() => {});
   }, [soundEnabled]);
 
   const playFinishSound = useCallback(() => {
-    if (!soundEnabled || !audioSystem.current) return;
-    const { finish } = audioSystem.current;
-    finish.currentTime = 0;
-    finish.play().catch(() => {});
+    if (!soundEnabled || !finishRef.current) return;
+    finishRef.current.currentTime = 0;
+    finishRef.current.play().catch(() => {});
   }, [soundEnabled]);
 
-  // Test Audio Function (for debugging)
   const handleTestAudio = () => {
-      if (!audioSystem.current) return;
-      
-      const { tick, music } = audioSystem.current;
-
-      // Force load to ensure the element isn't stuck in a completed state
-      tick.load();
-      
-      // Play tick
-      tick.currentTime = 0;
-      tick.play().then(() => {
-          setTimeout(() => {
-            // Play a snippet of music
-             if (audioSystem.current) {
-                 // Always load to ensure we grab the latest source if it changed recently
-                 music.load();
-                 music.volume = 1;
-                 music.play().catch(e => alert("Music failed: " + e));
-                 setTimeout(() => audioSystem.current?.music.pause(), 2000);
-             }
-          }, 500);
-      }).catch(e => {
-        console.error(e);
-        alert(`Audio failed to play. Check device volume. Error: ${e.name} - ${e.message}`);
-      });
+      // Manual trigger for testing
+      if (musicRef.current) {
+          musicRef.current.currentTime = 0;
+          musicRef.current.play().catch(e => alert("Play error: " + e));
+          setTimeout(() => musicRef.current?.pause(), 2000);
+      }
+      if (tickRef.current) {
+          tickRef.current.currentTime = 0;
+          tickRef.current.play().catch(() => {});
+      }
   };
 
   // --- QUIZ LOGIC ---
@@ -403,13 +302,6 @@ function App() {
     setShowExplanation(false);
     setError(null);
     setEarnedBadges([]);
-    
-    // Stop Music on Reset
-    if (audioSystem.current) {
-        audioSystem.current.music.pause();
-        audioSystem.current.music.currentTime = 0;
-    }
-    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -439,7 +331,6 @@ function App() {
 
   useEffect(() => {
     if (view === 'quiz' && config.timerSeconds > 0) {
-      // Play tick sound for last 5 seconds if not frozen
       if (quizState.timeRemaining <= 5 && quizState.timeRemaining > 0 && !isTimeFrozen) {
          playTick();
       }
@@ -478,58 +369,24 @@ function App() {
   const handleStartQuiz = () => {
     setError(null);
 
-    // 3. Configuration Validation
+    // Validate
     if (!config.subject && !customQuestions) {
         setError("Click Go To Top & Choose a Subject");
         return;
     }
 
-    // AUDIO FORCE START LOGIC
-    // We do this logic explicitly inside the event handler (click) to bypass autoplay restrictions
-    if (audioSystem.current) {
-        const { music, tick, finish } = audioSystem.current;
-        const intendedMusic = customAudio.music || DEFAULT_BG_MUSIC;
-
-        // Force src assignment if it somehow got desynced or empty
-        if (!music.src || music.src !== intendedMusic) {
-            music.src = intendedMusic;
-        }
-
-        // 1. Start Music (if enabled)
-        if (musicEnabled) {
-            music.volume = 1.0; 
-            music.currentTime = 0;
-            // Always force load to be safe on mobile
-            music.load();
-            const p = music.play();
-            if (p !== undefined) {
-               p.then(() => console.log("Music started"))
-                .catch(e => console.error("Music play blocked by browser:", e));
-            }
-        }
-
-        // 2. Warm up SFX
-        if (soundEnabled) {
-            // Ticks
-            tick.volume = 1.0;
-            // tick.load(); // Removed redundant load
-            tick.muted = true;
-            tick.play().then(() => {
-                tick.pause();
-                tick.currentTime = 0;
-                tick.muted = false;
-            }).catch(() => {});
-
-            // Finish
-            finish.volume = 1.0;
-            // finish.load(); // Removed redundant load
-            finish.muted = true;
-            finish.play().then(() => {
-                finish.pause();
-                finish.currentTime = 0;
-                finish.muted = false;
-            }).catch(() => {});
-        }
+    // --- FORCE PLAY MUSIC ---
+    // This is inside a user click handler, so it should bypass browser blocks
+    if (musicRef.current && musicEnabled) {
+        musicRef.current.volume = 0.5; // Reasonable volume
+        musicRef.current.currentTime = 0;
+        musicRef.current.play().catch(e => console.error("Music blocked:", e));
+    }
+    
+    // Warm up SFX
+    if (soundEnabled) {
+        if(tickRef.current) { tickRef.current.muted = true; tickRef.current.play().then(() => { tickRef.current!.pause(); tickRef.current!.muted = false; }).catch(()=>{}); }
+        if(finishRef.current) { finishRef.current.muted = true; finishRef.current.play().then(() => { finishRef.current!.pause(); finishRef.current!.muted = false; }).catch(()=>{}); }
     }
 
     let selectedQuestions: Question[] = [];
@@ -573,7 +430,6 @@ function App() {
        return;
     }
 
-    // 4. State Update
     setConfig((prev: QuizConfig) => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
     setView('quiz');
     setQuizState(prev => ({ 
@@ -664,11 +520,6 @@ function App() {
         }
       }
       setView('result');
-      
-      // Stop Music
-      if (audioSystem.current) {
-         audioSystem.current.music.pause();
-      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1125,6 +976,11 @@ function App() {
     <div className="min-h-screen bg-[#020617] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] font-sans selection:bg-blue-500/30">
         <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-blue-950/20 via-transparent to-transparent"></div>
         
+        {/* Hidden Audio Elements for Robust Playback */}
+        <audio ref={musicRef} src={customAudio.music || DEFAULT_BG_MUSIC} loop preload="auto" />
+        <audio ref={tickRef} src={customAudio.tick || DEFAULT_TICK_SOUND} preload="auto" />
+        <audio ref={finishRef} src={customAudio.finish || DEFAULT_FINISH_SOUND} preload="auto" />
+
         {view !== 'quiz' && (
             <Navbar 
               user={currentUser} 
@@ -1154,6 +1010,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
