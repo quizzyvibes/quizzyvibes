@@ -17,7 +17,6 @@ import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
 import AdminDashboard from './components/AdminDashboard';
 
-// Switch to Firebase Imports
 import { subscribeToAuth, logout, saveResultToCloud } from './services/firebase';
 import { loadQuestionsForTopic } from './services/questionLoader';
 import { parseQuestionFile } from './services/fileService';
@@ -69,24 +68,20 @@ const Confetti = () => {
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true); // New Loading State
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [view, setView] = useState<'welcome' | 'quiz' | 'result' | 'profile' | 'leaderboard' | 'review' | 'admin'>('welcome');
   const [error, setError] = useState<string | null>(null);
   
-  // Category State
   const [activeSubjectIds, setActiveSubjectIds] = useState<string[]>([]);
   const [categoryPage, setCategoryPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const ITEMS_PER_PAGE = 6;
 
-  // Refs
   const settingsRef = useRef<HTMLDivElement>(null);
 
-  // Audio State
   const [musicEnabled, setMusicEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
   
-  // Custom Audio State
   const [customAudio, setCustomAudio] = useState<{
     music: string | null;
     tick: string | null;
@@ -99,24 +94,20 @@ function App() {
     finish?: string;
   }>({});
 
-  // Admin Control States
   const [isConfigLocked, setIsConfigLocked] = useState(false);
   const [customQuestions, setCustomQuestions] = useState<Question[] | null>(null);
   const [customFileName, setCustomFileName] = useState<string | null>(null);
   const [hasCustomSubjects, setHasCustomSubjects] = useState(false);
 
-  // Lifeline State
   const [hiddenOptions, setHiddenOptions] = useState<string[]>([]);
   const [isTimeFrozen, setIsTimeFrozen] = useState(false);
 
-  // Audio Refs
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
   const customTickRef = useRef<HTMLAudioElement | null>(null);
   const customFinishRef = useRef<HTMLAudioElement | null>(null);
 
   const isAdmin = currentUser?.email?.toLowerCase().trim() === ADMIN_EMAIL;
 
-  // --- FIREBASE AUTH LISTENER ---
   useEffect(() => {
     const unsubscribe = subscribeToAuth((user) => {
       setCurrentUser(user);
@@ -126,7 +117,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Initialize Active Categories
     const storedCats = localStorage.getItem(CATEGORY_STORAGE_KEY);
     if (storedCats) {
       setActiveSubjectIds(JSON.parse(storedCats));
@@ -152,7 +142,6 @@ function App() {
     setCurrentUser(updatedUser);
   };
 
-  // Initialize Music
   useEffect(() => {
     bgMusicRef.current = new Audio(DEFAULT_BG_MUSIC);
     bgMusicRef.current.loop = true;
@@ -166,7 +155,6 @@ function App() {
     };
   }, []);
 
-  // Update Music Source when custom changes
   useEffect(() => {
     if (bgMusicRef.current) {
         const wasPlaying = !bgMusicRef.current.paused;
@@ -293,7 +281,6 @@ function App() {
 
   const handleLogout = async () => {
     await logout();
-    // Auth listener will handle setting currentUser to null
     resetQuiz();
   };
 
@@ -498,7 +485,6 @@ function App() {
           percentage: percentage,
         };
 
-        // SAVE TO CLOUD
         const { updatedUser, newBadges } = await saveResultToCloud(result);
         
         if (updatedUser) {
@@ -513,14 +499,7 @@ function App() {
       }
   };
 
-  // --- Views ---
-
-  // NOTE: renderWelcome, renderQuiz, renderResult, renderReview are identical to previous version, 
-  // just ensuring they use the new state and handlers. 
-  // Copying logic for brevity in this snippet.
-  
   const renderWelcome = () => {
-    // Filter Categories
     const filteredPresets = SUBJECT_PRESETS.filter(p => 
       activeSubjectIds.includes(p.id) && 
       (p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -789,7 +768,6 @@ function App() {
     const shareText = `I scored ${percentage}% on the ${subjectName} quiz in QuizzyVibes! Can you beat me?`;
     const shareUrl = window.location.href; 
     
-    // Reuse share functions from previous snippet...
     const socialLinks = [
         { name: 'Copy', icon: LinkIcon, color: 'bg-slate-600', action: () => { navigator.clipboard.writeText(`${shareText} ${shareUrl}`); alert("Result copied!"); } }
     ];
@@ -885,8 +863,6 @@ function App() {
     );
   };
 
-  // --- Main Render ---
-
   if (loadingAuth) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
@@ -934,6 +910,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
