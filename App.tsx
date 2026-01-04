@@ -592,7 +592,7 @@ function App() {
                 />
             </div>
 
-            <div className={`grid grid-cols-2 md:grid-cols-3 gap-5 transition-opacity duration-300 min-h-[400px] content-start ${customQuestions && !hasCustomSubjects ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+            <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 transition-opacity duration-300 min-h-[400px] content-start ${customQuestions && !hasCustomSubjects ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
               {displayedPresets.length > 0 ? displayedPresets.map(preset => {
                 const Icon = ICON_MAP[preset.icon] || Brain;
                 const isSelected = config.subject === preset.id;
@@ -600,18 +600,18 @@ function App() {
                   <button
                     key={preset.id}
                     onClick={() => handleSubjectSelect(preset.id)}
-                    className={`p-6 rounded-3xl border text-left transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-44 ${
+                    className={`p-3 md:p-6 rounded-3xl border text-left transition-all duration-300 group relative overflow-hidden flex flex-col justify-between min-h-[160px] h-auto md:h-44 ${
                       isSelected 
                         ? 'border-blue-400 bg-gradient-to-br from-blue-900/80 to-blue-800/40 shadow-xl shadow-blue-500/10 scale-[1.02]' 
                         : 'border-slate-700 bg-slate-900/40 hover:bg-slate-800 hover:border-slate-600 hover:shadow-lg hover:-translate-y-1'
                     }`}
                   >
-                    <div className={`p-3 rounded-2xl w-fit transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 group-hover:text-white group-hover:bg-slate-700'}`}>
-                      <Icon size={28} />
+                    <div className={`p-2 md:p-3 rounded-2xl w-fit transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 group-hover:text-white group-hover:bg-slate-700'}`}>
+                      <Icon size={24} className="md:w-7 md:h-7" />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-lg ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
-                      <p className={`text-sm mt-2 line-clamp-2 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>{preset.description}</p>
+                      <h3 className={`font-bold text-base md:text-lg break-words ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
+                      <p className={`text-xs md:text-sm mt-1 md:mt-2 line-clamp-2 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>{preset.description}</p>
                     </div>
                   </button>
                 )
@@ -934,4 +934,5 @@ function App() {
 }
 
 export default App;
+
 
