@@ -37,26 +37,30 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
           {question.options.map((option, idx) => {
             const isHidden = hiddenOptions.includes(option);
             
-            let buttonStyle = "bg-slate-800/40 border-slate-700 text-slate-200";
+            // Base style: constant border-2 to prevent width changes
+            let buttonStyle = "border-2 ";
             let icon = null;
 
             if (showFeedback) {
-              // On reveal, maintain same size and layout
               if (option === question.correctAnswer) {
-                buttonStyle = "bg-green-600/20 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]";
-                // Absolute position icon to prevent expansion
+                // Correct: Green border & background
+                buttonStyle += "bg-green-600/20 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]";
                 icon = <CheckCircle2 size={24} className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400" />;
               } else if (option === selectedAnswer && option !== question.correctAnswer) {
-                buttonStyle = "bg-red-600/20 border-red-500 text-red-200 opacity-90";
-                // Absolute position icon to prevent expansion
+                // Wrong: Red border & background
+                buttonStyle += "bg-red-600/20 border-red-500 text-red-200 opacity-90";
                 icon = <AlertCircle size={24} className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400" />;
               } else {
-                 buttonStyle = "opacity-40 bg-slate-900/20 border-slate-800 grayscale";
+                 // Others: Dimmed
+                 buttonStyle += "opacity-40 bg-slate-900/20 border-slate-800 grayscale text-slate-400";
               }
             } else if (selectedAnswer === option) {
-              buttonStyle = "bg-blue-600 border-blue-500 text-white ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-900";
+              // Selected (Active): Blue border & background. 
+              // REMOVED 'ring' and 'ring-offset' to prevent visual expansion/jumping.
+              buttonStyle += "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/30";
             } else {
-                buttonStyle += " hover:bg-slate-700/60 hover:text-white";
+                // Default State
+                buttonStyle += "bg-slate-800/40 border-slate-700 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-600";
             }
 
             if (isHidden) {
@@ -68,18 +72,18 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 key={idx}
                 onClick={() => !showFeedback && onSelectAnswer(option)}
                 disabled={showFeedback}
-                className={`relative w-full py-3 md:py-3.5 px-4 md:px-6 rounded-xl text-left border-2 transition-all duration-200 flex items-center group ${buttonStyle}`}
+                className={`relative w-full py-3 md:py-3.5 px-4 md:px-6 rounded-xl text-left transition-all duration-200 flex items-center group ${buttonStyle}`}
               >
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold mr-4 border-2 transition-colors ${
                    showFeedback && option === question.correctAnswer ? 'border-green-400 bg-green-500/20 text-green-300' : 
                    showFeedback && option === selectedAnswer ? 'border-red-400 bg-red-500/20 text-red-300' :
+                   selectedAnswer === option ? 'border-white bg-white/20 text-white' :
                    'border-slate-600 bg-slate-800/50 text-slate-400 group-hover:border-blue-400 group-hover:text-blue-200'
                 }`}>
                   {String.fromCharCode(65 + idx)}
                 </div>
                 {/* 
-                   UPDATED: Added 'pr-10' ALWAYS to reserve space for the icon. 
-                   This prevents text from reflowing (and increasing height) when the icon appears.
+                   Strict layout: 'pr-10' ALWAYS reserves space for the icon so text never reflows 
                 */}
                 <span className="text-lg md:text-xl font-semibold leading-tight pr-10">{option}</span>
                 {icon}
@@ -93,6 +97,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
