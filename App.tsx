@@ -16,7 +16,7 @@ import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
 import AdminDashboard from './components/AdminDashboard';
 
-import { subscribeToAuth, logout, saveResultToCloud } from './services/firebase';
+import { subscribeToAuth, logout, saveResultToCloud, subscribeToGlobalConfig, saveGlobalQuizConfig } from './services/firebase';
 import { loadQuestionsForTopic } from './services/questionLoader';
 import { parseQuestionFile } from './services/fileService';
 import { SUBJECT_PRESETS, DEFAULT_QUESTION_COUNT, DEFAULT_TIMER_SECONDS, DEFAULT_DIFFICULTY, ADMIN_EMAIL } from './constants';
@@ -107,6 +107,26 @@ function App() {
 
   // Safely check for admin since guest users might not have email
   const isAdmin = currentUser?.email && currentUser.email.toLowerCase().trim() === ADMIN_EMAIL;
+
+  // --- GLOBAL SYNC (LISTEN FOR ADMIN UPLOADS) ---
+  useEffect(() => {
+    // Subscribe to global config changes
+    const unsubscribe = subscribeToGlobalConfig((config) => {
+        if (config) {
+            console.log("Global config received:", config.fileName);
+            // Update local state with global data
+            setCustomQuestions(config.questions);
+            setCustomFileName(config.fileName);
+            setHasCustomSubjects(config.questions.some(q => !!q.subject));
+            
+            // Optionally update subject visibility if provided
+            if (config.activeSubjectIds && config.activeSubjectIds.length > 0) {
+                setActiveSubjectIds(config.activeSubjectIds);
+            }
+        }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = subscribeToAuth((user) => {
@@ -206,6 +226,12 @@ function App() {
       if (!hasSubjects) {
           setConfig(prev => ({ ...prev, questionCount: Math.min(questions.length, 50) }));
       }
+
+      // If Admin, save to global config automatically
+      if (isAdmin) {
+          await saveGlobalQuizConfig(questions, file.name, activeSubjectIds);
+          alert("Quiz synced to all users successfully!");
+      }
       
       setError(null);
     } catch (e: any) {
@@ -218,6 +244,9 @@ function App() {
     setCustomFileName(null);
     setHasCustomSubjects(false);
     setConfig(prev => ({ ...prev, questionCount: DEFAULT_QUESTION_COUNT }));
+    
+    // If admin, could clear global config too, but we'll leave it simple for now
+    // or add a clearGlobalConfig function.
   };
 
   const playTick = useCallback(() => {
@@ -280,8 +309,15 @@ function App() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    resetQuiz();
+    try {
+        await logout();
+        setCurrentUser(null); // Explicitly clear local state to force UI update
+        resetQuiz();
+    } catch (e) {
+        console.error("Logout failed locally", e);
+        // Force reset anyway
+        setCurrentUser(null);
+    }
   };
 
   const handleSubjectSelect = (subjectId: string) => {
@@ -518,7 +554,7 @@ function App() {
     };
 
     return (
-      <div className="max-w-7xl mx-auto w-full animate-fade-in pb-20 pt-24 md:pt-32">
+      <div className="max-w-7xl mx-auto w-full animate-fade-in pb-20 pt-24 md:pt-32 px-4">
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-6 tracking-tight">
             Choose Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Challenge</span>
@@ -553,9 +589,24 @@ function App() {
                 </div>
             </div>
             <div className="text-green-400 flex items-center gap-1 text-sm font-medium">
-                  <CheckCircle2 size={16} /> Ready
+                  <CheckCircle2 size={16} /> Synced Globally
             </div>
           </div>
+        )}
+
+        {/* Global State Notice for Non-Admins */}
+        {!isAdmin && customQuestions && (
+           <div className="max-w-3xl mx-auto mb-12 bg-indigo-500/10 border border-indigo-500/50 rounded-2xl p-4 flex items-center gap-4 animate-slide-up">
+              <div className="p-2 bg-indigo-500 rounded-lg text-white">
+                  <FileSpreadsheet size={24} />
+              </div>
+              <div>
+                  <h3 className="text-white font-bold text-lg">Live Quiz Event</h3>
+                  <p className="text-indigo-200 text-sm">
+                      The host has loaded a custom question set: <span className="font-bold text-white">{customFileName}</span>.
+                  </p>
+              </div>
+           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -589,8 +640,8 @@ function App() {
                       <Icon size={24} className="md:w-7 md:h-7" />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-sm sm:text-base md:text-lg break-words hyphens-auto ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
-                      <p className={`text-xs md:text-sm mt-1 md:mt-2 line-clamp-2 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>{preset.description}</p>
+                      <h3 className={`font-bold text-base md:text-lg break-words hyphens-auto ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
+                      <p className={`text-sm mt-1 md:mt-2 line-clamp-2 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>{preset.description}</p>
                     </div>
                   </button>
                 )
@@ -702,11 +753,11 @@ function App() {
 
     return (
       <>
-      <div className="max-w-4xl mx-auto w-full py-8 space-y-8 pt-32 pb-32 md:pb-8 relative">
-        <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-6">
+      <div className="max-w-4xl mx-auto w-full flex flex-col pt-20 pb-24 md:pb-8 relative min-h-[calc(100vh-80px)]">
+        <div className="flex items-center justify-between px-2 mb-4">
+            <div className="flex items-center gap-4 md:gap-6">
                 {config.timerSeconds > 0 && (
-                    <div className="relative w-16 h-16 flex-shrink-0">
+                    <div className="relative w-14 h-14 md:w-16 md:h-16 flex-shrink-0">
                         <svg className="w-full h-full" viewBox="0 0 64 64">
                             <circle cx="32" cy="32" r={radius} stroke="#1e293b" strokeWidth="6" fill="transparent" />
                             <circle cx="32" cy="32" r={radius} stroke="currentColor" strokeWidth="6" fill="transparent" className={`${isTimeFrozen ? 'text-cyan-400' : (quizState.timeRemaining <= 5 ? 'text-red-500' : 'text-blue-500')} transition-all duration-1000 ease-linear`} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform="rotate(-90 32 32)" />
@@ -725,14 +776,16 @@ function App() {
                    </div>
                 </div>
             </div>
-            <button onClick={resetQuiz} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors bg-slate-900/50 px-5 py-3 rounded-xl hover:bg-red-500/10 hover:border-red-500/30 border border-slate-800">
-                <XCircle size={20} /> <span className="font-bold">Quit</span>
+            <button onClick={resetQuiz} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors bg-slate-900/50 px-3 py-2 md:px-5 md:py-3 rounded-xl hover:bg-red-500/10 hover:border-red-500/30 border border-slate-800">
+                <XCircle size={20} /> <span className="font-bold hidden md:inline">Quit</span>
             </button>
         </div>
-        <div className="h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800/50">
+        
+        <div className="h-2 md:h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800/50 mb-6">
             <div className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-500 ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)]" style={{ width: `${((quizState.currentQuestionIndex + 1) / config.questions.length) * 100}%` }} />
         </div>
-        <div className="relative">
+
+        <div className="flex-1 flex flex-col justify-center">
             <QuizCard 
                 question={question}
                 selectedAnswer={quizState.answers[quizState.currentQuestionIndex]}
@@ -740,8 +793,9 @@ function App() {
                 showFeedback={hasAnswered}
                 hiddenOptions={hiddenOptions} 
             />
+            
             {config.lifelinesEnabled && !hasAnswered && (
-                <div className="flex justify-center gap-6 mt-6 mb-2">
+                <div className="flex justify-center gap-6 mt-6">
                      <button onClick={handleUse5050} disabled={quizState.lifelinesUsed.fiftyFifty} className={`flex items-center gap-2 px-5 py-3 rounded-full font-bold shadow-lg transition-all border-2 ${quizState.lifelinesUsed.fiftyFifty ? 'bg-slate-800 border-slate-700 text-slate-600 opacity-50 cursor-not-allowed' : 'bg-indigo-600 border-indigo-400 text-white hover:scale-105 hover:bg-indigo-500 hover:shadow-indigo-500/50'}`}>
                          <Zap size={18} className={quizState.lifelinesUsed.fiftyFifty ? '' : 'fill-yellow-400 text-yellow-400'} /> 50:50
                      </button>
@@ -752,7 +806,8 @@ function App() {
             )}
         </div>
       </div>
-      <div className={`fixed bottom-0 left-0 right-0 p-4 bg-[#020617]/90 backdrop-blur-lg border-t border-blue-900/30 md:static md:bg-transparent md:border-0 md:p-0 flex justify-end z-50 md:mt-8 max-w-4xl mx-auto transition-transform duration-300 ${hasAnswered ? 'translate-y-0' : 'translate-y-full md:translate-y-0'}`}>
+
+      <div className={`fixed bottom-0 left-0 right-0 p-4 bg-[#020617]/95 backdrop-blur-lg border-t border-blue-900/30 md:static md:bg-transparent md:border-0 md:p-0 flex justify-end z-50 md:mt-8 max-w-4xl mx-auto transition-transform duration-300 ${hasAnswered ? 'translate-y-0' : 'translate-y-full md:translate-y-0'}`}>
             <Button onClick={handleNext} disabled={!hasAnswered} variant={hasAnswered ? 'primary' : 'secondary'} className={`w-full md:w-auto px-10 h-16 text-xl shadow-xl ${hasAnswered ? 'shadow-blue-500/30' : 'md:opacity-0 md:pointer-events-none'}`}>
                 {quizState.currentQuestionIndex === config.questions.length - 1 ? 'See Results' : 'Next Question'} <ArrowRight className="ml-2" size={24} />
             </Button>
@@ -775,7 +830,7 @@ function App() {
     return (
       <>
       {percentage === 100 && <Confetti />}
-      <div className="max-w-2xl mx-auto w-full py-12 animate-slide-up text-center space-y-8 pt-32 relative z-10">
+      <div className="max-w-2xl mx-auto w-full py-12 animate-slide-up text-center space-y-8 pt-32 relative z-10 px-4">
         <div className="relative inline-block">
             <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full"></div>
             <Trophy className={`w-32 h-32 mx-auto ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} relative z-10 drop-shadow-2xl`} />
@@ -791,25 +846,25 @@ function App() {
           </div>
         )}
         <div className="space-y-4">
-            <h2 className="text-6xl font-display font-bold text-white tracking-tight">{message}</h2>
-            <p className="text-slate-300 text-xl">You completed the <span className="text-blue-400 font-bold">{subjectName}</span> challenge.</p>
+            <h2 className="text-5xl md:text-6xl font-display font-bold text-white tracking-tight">{message}</h2>
+            <p className="text-slate-300 text-lg md:text-xl">You completed the <span className="text-blue-400 font-bold">{subjectName}</span> challenge.</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="glass-panel p-5 rounded-2xl border-t border-slate-700">
+            <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Score</div>
-                <div className="text-3xl font-bold text-blue-400">{percentage}%</div>
+                <div className="text-2xl md:text-3xl font-bold text-blue-400">{percentage}%</div>
             </div>
-            <div className="glass-panel p-5 rounded-2xl border-t border-slate-700">
+            <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Difficulty</div>
-                <div className="text-xl font-bold text-white pt-1">{config.difficulty}</div>
+                <div className="text-lg md:text-xl font-bold text-white pt-1">{config.difficulty}</div>
             </div>
-             <div className="glass-panel p-5 rounded-2xl border-t border-slate-700">
+             <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Correct</div>
-                <div className="text-3xl font-bold text-green-400">{quizState.score}/{config.questions.length}</div>
+                <div className="text-2xl md:text-3xl font-bold text-green-400">{quizState.score}/{config.questions.length}</div>
             </div>
-            <div className="glass-panel p-5 rounded-2xl border-t border-slate-700">
+            <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Time</div>
-                <div className="text-xl font-bold text-cyan-400 pt-1">{config.timerSeconds === 0 ? 'OFF' : `${config.timerSeconds}s`}</div>
+                <div className="text-lg md:text-xl font-bold text-cyan-400 pt-1">{config.timerSeconds === 0 ? 'OFF' : `${config.timerSeconds}s`}</div>
             </div>
         </div>
         <div className="flex flex-col gap-4 max-w-sm mx-auto w-full z-20 relative">
@@ -826,9 +881,9 @@ function App() {
 
   const renderReview = () => {
     return (
-       <div className="max-w-4xl mx-auto w-full py-12 animate-slide-up pt-32 pb-20">
+       <div className="max-w-4xl mx-auto w-full py-12 animate-slide-up pt-32 pb-20 px-4">
             <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-display font-bold text-white">Answer Review</h2>
+                <h2 className="text-2xl md:text-3xl font-display font-bold text-white">Answer Review</h2>
                 <Button onClick={() => setView('result')} variant="outline"><XCircle className="mr-2" size={18} /> Close</Button>
             </div>
             <div className="space-y-6">
@@ -839,7 +894,7 @@ function App() {
                         <div key={idx} className={`glass-panel p-6 rounded-2xl border-l-4 ${isCorrect ? 'border-l-green-500' : 'border-l-red-500'} bg-slate-900/40`}>
                              <div className="flex items-start gap-4 mb-4">
                                 <span className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-400">{idx + 1}</span>
-                                <h3 className="text-lg font-bold text-white">{q.text}</h3>
+                                <h3 className="text-base md:text-lg font-bold text-white">{q.text}</h3>
                              </div>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pl-12">
                                 <div className={`p-3 rounded-lg border ${isCorrect ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
