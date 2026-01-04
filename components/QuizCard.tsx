@@ -23,11 +23,11 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
         {/* Dedicated Framed Question Box */}
         {/* 
            UPDATES: 
-           1. min-h-[140px] for mobile.
-           2. Increased font size: text-2xl (mobile) / text-4xl (desktop).
+           1. min-h-[140px] for mobile to accomodate larger text.
+           2. Increased font size: text-3xl (mobile) / text-4xl (tablet) / text-5xl (desktop).
         */}
-        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[110px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-white leading-snug text-center">
+        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[120px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
@@ -37,29 +37,29 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
           {question.options.map((option, idx) => {
             const isHidden = hiddenOptions.includes(option);
             
-            // Base style: constant border-2 to prevent width changes
+            // CONSTANT border-2 to prevent any size jumping
             let buttonStyle = "border-2 ";
             let icon = null;
 
             if (showFeedback) {
               if (option === question.correctAnswer) {
-                // Correct: Green border & background
+                // Correct: Green border & background highlight
                 buttonStyle += "bg-green-600/20 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]";
-                icon = <CheckCircle2 size={24} className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400" />;
+                // Absolute positioned icon (doesn't affect layout flow)
+                icon = <CheckCircle2 size={28} className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400" />;
               } else if (option === selectedAnswer && option !== question.correctAnswer) {
-                // Wrong: Red border & background
+                // Wrong: Red border & background highlight
                 buttonStyle += "bg-red-600/20 border-red-500 text-red-200 opacity-90";
-                icon = <AlertCircle size={24} className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400" />;
+                icon = <AlertCircle size={28} className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400" />;
               } else {
                  // Others: Dimmed
-                 buttonStyle += "opacity-40 bg-slate-900/20 border-slate-800 grayscale text-slate-400";
+                 buttonStyle += "opacity-40 bg-slate-900/20 border-slate-800 grayscale text-slate-500";
               }
             } else if (selectedAnswer === option) {
-              // Selected (Active): Blue border & background. 
-              // REMOVED 'ring' and 'ring-offset' to prevent visual expansion/jumping.
+              // Selected: Blue border & background
               buttonStyle += "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/30";
             } else {
-                // Default State
+                // Default: Slate border & background
                 buttonStyle += "bg-slate-800/40 border-slate-700 text-slate-200 hover:bg-slate-700/60 hover:text-white hover:border-slate-600";
             }
 
@@ -72,7 +72,10 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 key={idx}
                 onClick={() => !showFeedback && onSelectAnswer(option)}
                 disabled={showFeedback}
-                className={`relative w-full py-3 md:py-3.5 px-4 md:px-6 rounded-xl text-left transition-all duration-200 flex items-center group ${buttonStyle}`}
+                // FIXED LAYOUT:
+                // 1. 'pr-12' (mobile) and 'md:pr-16' (desktop) reserves space for the icon ALWAYS.
+                // 2. This prevents text wrapping changes when the icon appears.
+                className={`relative w-full py-4 pl-4 pr-12 md:pl-6 md:pr-16 rounded-xl text-left transition-all duration-200 flex items-center group ${buttonStyle}`}
               >
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold mr-4 border-2 transition-colors ${
                    showFeedback && option === question.correctAnswer ? 'border-green-400 bg-green-500/20 text-green-300' : 
@@ -82,10 +85,11 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 }`}>
                   {String.fromCharCode(65 + idx)}
                 </div>
-                {/* 
-                   Strict layout: 'pr-10' ALWAYS reserves space for the icon so text never reflows 
-                */}
-                <span className="text-lg md:text-xl font-semibold leading-tight pr-10">{option}</span>
+                
+                <span className="text-lg md:text-xl font-semibold leading-tight break-words">
+                    {option}
+                </span>
+                
                 {icon}
               </button>
             );
@@ -97,6 +101,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
