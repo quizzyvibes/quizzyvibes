@@ -1,14 +1,18 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { cwd } from 'node:process'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  // In production, Vercel handles the API routing automatically.
-  // In local development, we need to run the API separately or mock it, 
-  // OR use 'vercel dev' command. 
-  // For simplicity in this codebase, we assume deployment to Vercel.
-  define: {
-    // We don't need process.env.API_KEY in the client anymore!
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
+  const env = loadEnv(mode, cwd(), '');
+
+  return {
+    plugins: [react()],
+    define: {
+      // Expose env variables as process.env for compatibility
+      'process.env': env
+    }
   }
 })
