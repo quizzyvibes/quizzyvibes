@@ -25,7 +25,7 @@ export const SUBJECT_PRESETS: SubjectPreset[] = [
   { id: 'cook', name: 'Home Cooking', icon: 'ChefHat', description: 'Recipes, techniques, and flavors' },
 ];
 
-export const DEFAULT_TIMER_SECONDS = 5; // Default to 5s
+export const DEFAULT_TIMER_SECONDS = 10; // Default to 10s
 export const DEFAULT_QUESTION_COUNT = 10;
 export const DEFAULT_DIFFICULTY = Difficulty.EASY;
 
@@ -37,4 +37,3 @@ export const BADGES: Badge[] = [
   { id: 'dedicated', name: 'Dedicated', description: 'Complete 10 quizzes', icon: 'Medal' },
   { id: 'science_whiz', name: 'Science Whiz', description: 'Get 100% on a Science quiz', icon: 'FlaskConical' },
 ];
-
