@@ -32,7 +32,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout, currentView, onChangeVi
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-blue-900/50 bg-[#020617]/90 backdrop-blur-md">
+    <nav className="absolute top-0 left-0 right-0 z-50 glass-panel border-b border-blue-900/50 bg-[#020617]/90 backdrop-blur-md">
       <div className="container mx-auto px-2 md:px-4 h-20 md:h-24 flex items-center justify-between">
         {/* Logo Section */}
         <div 
@@ -122,6 +122,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout, currentView, onChangeVi
 };
 
 export default Navbar;
+
 
 
 
