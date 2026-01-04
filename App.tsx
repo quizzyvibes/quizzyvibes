@@ -259,6 +259,7 @@ function App() {
 
     if (view === 'quiz') {
        if (musicEnabled) {
+          // If already playing, do nothing. If paused, try play.
           if (sys.music.paused) sys.music.play().catch(() => {});
        } else {
           sys.music.pause();
@@ -498,7 +499,8 @@ function App() {
         if (musicEnabled) {
             music.volume = 1.0; 
             music.currentTime = 0;
-            // Removed music.load() to prevent interruption if already ready
+            // Always force load to be safe on mobile
+            music.load();
             const p = music.play();
             if (p !== undefined) {
                p.then(() => console.log("Music started"))
@@ -1041,20 +1043,19 @@ function App() {
         </div>
 
         <div className="flex flex-col gap-4 max-w-sm mx-auto w-full z-20 relative pt-4">
-            <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-16 text-lg bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={24} /> Review Answers</Button>
+            <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={24} /> Review Answers</Button>
             
             <div className="flex gap-4 w-full">
                 <Button 
                   onClick={resetQuiz} 
-                  variant="secondary" 
-                  className="flex-1 h-16 text-lg font-bold border-2 rounded-2xl"
+                  className="flex-1 h-14 text-lg font-bold bg-black border-2 border-slate-800 text-white hover:bg-slate-900 shadow-lg rounded-2xl"
                 >
                   <RefreshCw className="mr-3" size={24} /> Play Again
                 </Button>
                 
                 <Button 
                   onClick={() => setView('leaderboard')} 
-                  className="flex-1 h-16 text-lg font-bold bg-black border-2 border-slate-900 text-yellow-400 hover:bg-slate-900 shadow-lg rounded-2xl"
+                  className="flex-1 h-14 text-lg font-bold bg-black border-2 border-slate-800 text-yellow-400 hover:bg-slate-900 shadow-lg rounded-2xl"
                 >
                     <Trophy className="mr-3" size={24} /> Rank
                 </Button>
@@ -1153,6 +1154,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
