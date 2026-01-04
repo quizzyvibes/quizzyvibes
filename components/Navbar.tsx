@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LogOut, Trophy, User as UserIcon, Home, Zap, ShieldAlert } from 'lucide-react';
 import { User as UserType } from '../types';
 import { ADMIN_EMAIL } from '../constants';
@@ -13,6 +13,17 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ user, onLogout, currentView, onChangeView }) => {
   const isAdmin = user?.email?.toLowerCase().trim() === ADMIN_EMAIL;
+
+  useEffect(() => {
+    // Helpful debug for the user trying to access admin
+    if (user && !isAdmin) {
+      console.log(`%c[Admin Check] Logged in as: "${user.email}"`, 'color: yellow');
+      console.log(`%c[Admin Check] Required Admin Email: "${ADMIN_EMAIL}"`, 'color: orange');
+      console.log(`%c[Admin Check] To fix: Add VITE_ADMIN_EMAIL="${user.email}" to your .env file or Vercel settings.`, 'color: lightblue');
+    } else if (isAdmin) {
+      console.log(`%c[Admin Check] You are logged in as Admin.`, 'color: lightgreen; font-weight: bold;');
+    }
+  }, [user, isAdmin]);
 
   const navItems = [
     { id: 'welcome', label: 'Home', icon: Home },
@@ -111,5 +122,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout, currentView, onChangeVi
 };
 
 export default Navbar;
+
 
 
