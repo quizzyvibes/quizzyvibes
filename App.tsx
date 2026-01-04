@@ -30,10 +30,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 const CATEGORY_STORAGE_KEY = 'quizmaster_active_categories';
 
-// Audio Assets
-const DEFAULT_BG_MUSIC = "https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3"; 
-const DEFAULT_TICK_SOUND = "https://cdn.pixabay.com/audio/2022/03/24/audio_824f9c5458.mp3"; 
-const DEFAULT_FINISH_SOUND = "https://cdn.pixabay.com/audio/2021/08/04/audio_0625c153e2.mp3";
+// Audio Assets - Switched to highly reliable Google Storage URLs (MP3)
+// These prevent "NotSupportedError" caused by hotlink protection on other sites
+const DEFAULT_BG_MUSIC = "https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"; 
+const DEFAULT_TICK_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3"; 
+const DEFAULT_FINISH_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/orders/coins.mp3";
 
 const ITEMS_PER_PAGE = 4; 
 
@@ -120,13 +121,20 @@ function App() {
 
   // Initialize Audio Objects ONCE
   useEffect(() => {
-    // create only if not exists
     if (!audioSystem.current) {
-        audioSystem.current = {
-            music: new Audio(DEFAULT_BG_MUSIC),
-            tick: new Audio(DEFAULT_TICK_SOUND),
-            finish: new Audio(DEFAULT_FINISH_SOUND)
-        };
+        const music = new Audio(DEFAULT_BG_MUSIC);
+        const tick = new Audio(DEFAULT_TICK_SOUND);
+        const finish = new Audio(DEFAULT_FINISH_SOUND);
+
+        // Add error listeners to help debug issues
+        [music, tick, finish].forEach(a => {
+            a.addEventListener('error', (e) => {
+                const target = e.target as HTMLAudioElement;
+                console.warn(`Audio Error for ${target.src}:`, target.error);
+            });
+        });
+
+        audioSystem.current = { music, tick, finish };
         
         // Config
         audioSystem.current.music.loop = true;
@@ -260,18 +268,27 @@ function App() {
   const handleTestAudio = () => {
       if (!audioSystem.current) return;
       
+      const { tick, music } = audioSystem.current;
+
+      // Force reload to clear any previous errors
+      tick.load();
+      
       // Play tick
-      audioSystem.current.tick.currentTime = 0;
-      audioSystem.current.tick.play().then(() => {
+      tick.currentTime = 0;
+      tick.play().then(() => {
           setTimeout(() => {
             // Play a snippet of music
              if (audioSystem.current) {
-                 audioSystem.current.music.volume = 1;
-                 audioSystem.current.music.play().catch(e => alert("Music failed: " + e));
+                 music.load();
+                 music.volume = 1;
+                 music.play().catch(e => alert("Music failed: " + e));
                  setTimeout(() => audioSystem.current?.music.pause(), 2000);
              }
           }, 500);
-      }).catch(e => alert("Audio failed to play. Check device volume/silent mode. Error: " + e));
+      }).catch(e => {
+        console.error(e);
+        alert(`Audio failed to play. Check device volume. Error: ${e.name} - ${e.message}`);
+      });
   };
 
   // --- QUIZ LOGIC ---
@@ -426,6 +443,13 @@ function App() {
     
     if (audioSystem.current) {
         const { music, tick, finish } = audioSystem.current;
+
+        // Force load to ensure they are ready and not in an error state
+        if (musicEnabled) music.load();
+        if (soundEnabled) {
+            tick.load();
+            finish.load();
+        }
 
         // 1. Start Music (if enabled)
         if (musicEnabled) {
@@ -1073,6 +1097,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
