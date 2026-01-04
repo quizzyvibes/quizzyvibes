@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Difficulty, User } from '../types';
-import { Settings, Clock, BarChart3, ListOrdered, Music, Volume2, Upload, Lock, ShieldAlert, Trash2, Unlock, FileSpreadsheet, List, Zap } from 'lucide-react';
+import { Settings, Clock, BarChart3, ListOrdered, Music, Volume2, Upload, Lock, ShieldAlert, Trash2, Unlock, FileSpreadsheet, List, Zap, Check, CloudLightning } from 'lucide-react';
 import { SUBJECT_PRESETS, ADMIN_EMAIL } from '../constants';
 
 interface SettingsPanelProps {
@@ -56,7 +57,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   };
 
   return (
-    <div className="glass-panel p-6 rounded-3xl space-y-8 bg-slate-900/60 border border-slate-800 relative">
+    <div className="glass-panel p-6 rounded-3xl space-y-6 bg-slate-900/60 border border-slate-800 relative">
       
       {/* Locked Overlay for Non-Admins */}
       {!isAdmin && isConfigLocked && (
@@ -67,8 +68,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       )}
 
-      <h3 className="text-2xl font-bold text-white flex items-center gap-3 pb-2 border-b border-slate-800/50">
-        <Settings className="text-blue-400" size={28} />
+      <h3 className="text-lg font-bold text-white flex items-center gap-3 pb-2 border-b border-slate-800/50 whitespace-nowrap overflow-hidden text-ellipsis">
+        <Settings className="text-blue-400" size={24} />
         Game Settings
       </h3>
       
@@ -76,8 +77,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       <div className={!isAdmin && isConfigLocked ? 'opacity-30 pointer-events-none filter grayscale' : ''}>
         
         {/* Difficulty */}
-        <div className="mb-8">
-            <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+        <div className="mb-6">
+            <label className="flex items-center gap-2 text-lg font-bold text-slate-200 mb-3">
                 <BarChart3 size={20} className="text-blue-400" /> Difficulty Level
             </label>
             <div className="flex gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
@@ -92,7 +93,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <button
                     key={level}
                     onClick={() => setDifficulty(level)}
-                    className={`flex-1 py-3 px-3 rounded-xl text-sm md:text-base font-bold transition-all duration-300 ${
+                    className={`flex-1 py-3 px-1 rounded-xl text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden text-ellipsis ${
                         isActive 
                         ? activeClass
                         : 'text-slate-400 hover:text-slate-200'
@@ -106,8 +107,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
 
         {/* Question Count */}
-        <div className="mb-8">
-            <label className="flex items-center gap-3 text-base font-bold text-slate-200 mb-4">
+        <div className="mb-6">
+            <label className="flex items-center gap-3 text-lg font-bold text-slate-200 mb-4">
             <span className="flex items-center gap-2">
                 <ListOrdered size={20} className="text-blue-400"/> 
                 Question Count
@@ -132,12 +133,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
 
         {/* Timer */}
-        <div className="mb-8">
-            <label className="flex justify-between items-center text-base font-bold text-slate-200 mb-3">
+        <div className="mb-6">
+            <label className="flex justify-between items-center text-lg font-bold text-slate-200 mb-3">
             <span className="flex items-center gap-2"><Clock size={20} className="text-blue-400" /> Timer (sec)</span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded ${timer === 0 ? 'text-slate-500' : 'text-cyan-300 bg-cyan-900/30'}`}>
-                {timer === 0 ? 'OFF' : 'ON'}
-            </span>
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {[0, 5, 10, 15, 30, 60].map(t => (
@@ -156,26 +154,35 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </div>
         </div>
 
-        {/* Lifelines Toggle */}
-        <div className="mb-8 p-4 rounded-xl border border-slate-700 bg-slate-900/40 flex items-center justify-between">
-           <div className="flex items-center gap-3">
-               <div className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-lg">
-                   <Zap size={20} />
-               </div>
-               <div>
-                   <div className="text-base font-bold text-white">Power-ups</div>
-                   <div className="text-xs text-slate-400">Enable 50/50 & Freeze</div>
-               </div>
-           </div>
-           <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={lifelinesEnabled} onChange={(e) => setLifelinesEnabled(e.target.checked)} className="sr-only peer" />
-              <div className="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-500"></div>
+        {/* Lifelines Toggle - Redesigned */}
+        <div className="mb-6">
+           <label className="text-lg font-bold text-slate-200 flex items-center gap-2 mb-3">
+               <Zap size={20} className="text-blue-400" /> Power-ups
            </label>
+           <button 
+                onClick={() => setLifelinesEnabled(!lifelinesEnabled)}
+                className={`w-full p-4 rounded-xl border flex items-center justify-between gap-2 transition-all ${
+                    lifelinesEnabled 
+                    ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
+                    : 'bg-slate-900/50 border-slate-800 text-slate-500'
+                }`}
+                >
+                <div className="flex items-center gap-3">
+                    <CloudLightning size={24} />
+                    <div className="text-left">
+                        <span className="text-sm font-bold block">50/50 & Freeze</span>
+                        <span className="text-xs opacity-70">Help options during quiz</span>
+                    </div>
+                </div>
+                <div className={`text-[10px] uppercase px-2 py-1 rounded font-bold ${lifelinesEnabled ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                    {lifelinesEnabled ? 'ACTIVE' : 'OFF'}
+                </div>
+            </button>
         </div>
 
         {/* Audio Controls */}
         <div className="space-y-4 pt-4 border-t border-slate-800/50">
-            <label className="text-base font-bold text-slate-200 flex items-center gap-2">
+            <label className="text-lg font-bold text-slate-200 flex items-center gap-2">
             <Volume2 size={20} className="text-blue-400" /> Audio Settings
             </label>
 
@@ -215,6 +222,34 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 </span>
                 </button>
             </div>
+            
+            {/* ADMIN ONLY: Restore Audio Uploads */}
+            {isAdmin && (
+                <div className="space-y-2 mt-4 p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <p className="text-xs text-slate-400 font-bold uppercase mb-2 flex items-center gap-1"><Upload size={10} /> Custom Audio (Admin)</p>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                        {/* Music Upload */}
+                        <label className="flex flex-col items-center justify-center p-2 border border-slate-700 border-dashed rounded-lg hover:bg-slate-800 cursor-pointer text-center">
+                            <span className="text-[10px] text-slate-400 font-bold">Music</span>
+                             {customAudioNames.music ? <Check size={12} className="text-green-500"/> : <Upload size={12} className="text-slate-500"/>}
+                            <input type="file" accept="audio/*" onChange={handleFileChange('music')} className="hidden" />
+                        </label>
+                        {/* Tick Upload */}
+                        <label className="flex flex-col items-center justify-center p-2 border border-slate-700 border-dashed rounded-lg hover:bg-slate-800 cursor-pointer text-center">
+                            <span className="text-[10px] text-slate-400 font-bold">Tick</span>
+                            {customAudioNames.tick ? <Check size={12} className="text-green-500"/> : <Upload size={12} className="text-slate-500"/>}
+                            <input type="file" accept="audio/*" onChange={handleFileChange('tick')} className="hidden" />
+                        </label>
+                        {/* Finish Upload */}
+                        <label className="flex flex-col items-center justify-center p-2 border border-slate-700 border-dashed rounded-lg hover:bg-slate-800 cursor-pointer text-center">
+                            <span className="text-[10px] text-slate-400 font-bold">Finish</span>
+                             {customAudioNames.finish ? <Check size={12} className="text-green-500"/> : <Upload size={12} className="text-slate-500"/>}
+                            <input type="file" accept="audio/*" onChange={handleFileChange('finish')} className="hidden" />
+                        </label>
+                    </div>
+                </div>
+            )}
         </div>
       </div>
 
@@ -310,4 +345,5 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 };
 
 export default SettingsPanel;
+
 
