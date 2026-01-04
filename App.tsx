@@ -102,7 +102,6 @@ function App() {
   const [hiddenOptions, setHiddenOptions] = useState<string[]>([]);
   const [isTimeFrozen, setIsTimeFrozen] = useState(false);
   
-  // NEW STATE for Explanation Page
   const [showExplanation, setShowExplanation] = useState(false);
 
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -258,13 +257,14 @@ function App() {
     }
   }, [soundEnabled, customAudio.finish]);
 
+  // UPDATE: Default lifelinesEnabled to false
   const [config, setConfig] = useState<QuizConfig>({
     subject: '', 
     difficulty: DEFAULT_DIFFICULTY,
     questionCount: DEFAULT_QUESTION_COUNT,
     timerSeconds: DEFAULT_TIMER_SECONDS,
     questions: [],
-    lifelinesEnabled: true 
+    lifelinesEnabled: false 
   });
 
   const [quizState, setQuizState] = useState<QuizState>({
@@ -279,8 +279,10 @@ function App() {
 
   const [earnedBadges, setEarnedBadges] = useState<Badge[]>([]);
 
+  // UPDATE: Reset functionality clears selection and scrolls up
   const resetQuiz = () => {
     setView('welcome');
+    setConfig(prev => ({ ...prev, subject: '' })); // Light off subject selection
     setQuizState({
       currentQuestionIndex: 0,
       score: 0,
@@ -300,6 +302,9 @@ function App() {
       bgMusicRef.current.pause();
       bgMusicRef.current.currentTime = 0;
     }
+    
+    // Go to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLogout = async () => {
@@ -528,6 +533,8 @@ function App() {
       if (bgMusicRef.current) {
         bgMusicRef.current.pause();
       }
+      // Scroll to top for results page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const scrollToTop = () => {
@@ -767,19 +774,47 @@ function App() {
 
         {/* Main Content Area - Flex Grow */}
         <div className="flex-1 overflow-hidden p-4 flex flex-col relative bg-gradient-to-b from-[#020617] to-slate-950">
-            {showExplanation && question.explanation ? (
-                // EXPLANATION VIEW (Replaces Card)
-                <div className="flex-1 flex flex-col items-center justify-center animate-fade-in p-4 text-center">
-                    <div className="bg-blue-900/20 border border-blue-500/30 p-8 rounded-3xl max-w-lg w-full">
-                        <Info size={48} className="text-blue-400 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-white mb-4">Explanation</h3>
-                        <p className="text-xl text-blue-100 leading-relaxed mb-8">
-                            {question.explanation}
-                        </p>
-                        <Button onClick={handleNext} fullWidth className="h-14 text-lg">
-                            {quizState.currentQuestionIndex === config.questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+            {showExplanation ? (
+                // UPDATED EXPLANATION VIEW: Shows Question + Answer + Explanation without options
+                <div className="flex-1 flex flex-col animate-fade-in h-full overflow-y-auto custom-scrollbar">
+                     
+                     {/* 1. Reuse Question Box */}
+                     <div className="flex-shrink-0 mb-6 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-6 min-h-[140px] flex items-center justify-center shadow-inner">
+                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white leading-snug text-center opacity-70">
+                            {question.text}
+                        </h2>
+                     </div>
+
+                     {/* 2. Big Correct Answer */}
+                     <div className="mb-6 text-center animate-slide-up">
+                         <div className="text-sm font-bold text-green-400 uppercase tracking-widest mb-2">Correct Answer</div>
+                         <div className="text-3xl md:text-5xl font-bold text-white drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">
+                             {question.correctAnswer}
+                         </div>
+                     </div>
+
+                     {/* 3. Explanation Text */}
+                     {question.explanation && (
+                        <div className="bg-blue-900/10 border border-blue-500/20 p-6 rounded-2xl text-center max-w-2xl mx-auto mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
+                            <div className="flex items-center justify-center gap-2 mb-3 text-blue-300">
+                                <Info size={20} />
+                                <span className="font-bold uppercase text-sm">Why is this correct?</span>
+                            </div>
+                            <p className="text-lg md:text-xl text-blue-100 leading-relaxed">
+                                {question.explanation}
+                            </p>
+                        </div>
+                     )}
+                     
+                     {/* 4. Centralized Next Button */}
+                     <div className="mt-auto pb-6 flex justify-center animate-slide-up" style={{animationDelay: '0.2s'}}>
+                        <Button 
+                            onClick={handleNext} 
+                            className="h-16 px-12 text-xl font-bold shadow-2xl shadow-blue-500/40 rounded-full"
+                        >
+                            {quizState.currentQuestionIndex === config.questions.length - 1 ? 'Finish Quiz' : 'Next Question'} <ArrowRight className="ml-2" />
                         </Button>
-                    </div>
+                     </div>
                 </div>
             ) : (
                 // QUIZ CARD
@@ -793,7 +828,7 @@ function App() {
             )}
         </div>
 
-        {/* Bottom Actions */}
+        {/* Bottom Actions - Hidden during explanation view as button is now inside */}
         {!showExplanation && (
             <div className="flex-shrink-0 p-4 bg-slate-900/80 border-t border-slate-800 backdrop-blur-lg">
                 {hasAnswered ? (
@@ -838,49 +873,59 @@ function App() {
     return (
       <>
       {percentage === 100 && <Confetti />}
-      <div className="max-w-2xl mx-auto w-full py-12 animate-slide-up text-center space-y-8 pt-32 relative z-10 px-4">
+      <div className="max-w-2xl mx-auto w-full py-8 animate-slide-up text-center space-y-6 pt-24 relative z-10 px-4">
+        
+        {/* Slightly Smaller Trophy */}
         <div className="relative inline-block">
             <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full"></div>
-            <Trophy className={`w-32 h-32 mx-auto ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} relative z-10 drop-shadow-2xl`} />
+            <Trophy className={`w-24 h-24 mx-auto ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} relative z-10 drop-shadow-2xl`} />
         </div>
+
         {earnedBadges.length > 0 && (
-          <div className="glass-panel p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 inline-block">
-            <h3 className="text-yellow-400 font-bold mb-2 flex items-center justify-center gap-2"><Sparkles size={20} /> New Badges Unlocked!</h3>
+          <div className="glass-panel p-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 inline-block">
+            <h3 className="text-yellow-400 font-bold mb-2 flex items-center justify-center gap-2 text-sm"><Sparkles size={16} /> New Badges Unlocked!</h3>
             <div className="flex flex-wrap justify-center gap-3">
               {earnedBadges.map(badge => (
-                <div key={badge.id} className="bg-slate-900/50 px-3 py-2 rounded-lg text-sm text-white flex items-center gap-2"><span>🏆</span> {badge.name}</div>
+                <div key={badge.id} className="bg-slate-900/50 px-3 py-1 rounded-lg text-xs text-white flex items-center gap-2"><span>🏆</span> {badge.name}</div>
               ))}
             </div>
           </div>
         )}
-        <div className="space-y-4">
+
+        <div className="space-y-3">
             <h2 className="text-5xl md:text-6xl font-display font-bold text-white tracking-tight">{message}</h2>
             <p className="text-slate-300 text-lg md:text-xl">You completed the <span className="text-blue-400 font-bold">{subjectName}</span> challenge.</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="glass-panel p-4 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Score</div>
-                <div className="text-2xl md:text-3xl font-bold text-blue-400">{percentage}%</div>
+                <div className="text-2xl font-bold text-blue-400">{percentage}%</div>
             </div>
-            <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
+            <div className="glass-panel p-4 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Difficulty</div>
-                <div className="text-lg md:text-xl font-bold text-white pt-1">{config.difficulty}</div>
+                <div className="text-lg font-bold text-white pt-1">{config.difficulty}</div>
             </div>
-             <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
+             <div className="glass-panel p-4 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Correct</div>
-                <div className="text-2xl md:text-3xl font-bold text-green-400">{quizState.score}/{config.questions.length}</div>
+                <div className="text-2xl font-bold text-green-400">{quizState.score}/{config.questions.length}</div>
             </div>
-            <div className="glass-panel p-4 md:p-5 rounded-2xl border-t border-slate-700">
+            <div className="glass-panel p-4 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Time</div>
-                <div className="text-lg md:text-xl font-bold text-cyan-400 pt-1">{config.timerSeconds === 0 ? 'OFF' : `${config.timerSeconds}s`}</div>
+                <div className="text-lg font-bold text-cyan-400 pt-1">{config.timerSeconds === 0 ? 'OFF' : `${config.timerSeconds}s`}</div>
             </div>
         </div>
-        <div className="flex flex-col gap-4 max-w-sm mx-auto w-full z-20 relative">
-            <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={20} /> Review Answers</Button>
+
+        <div className="flex flex-col gap-4 max-w-sm mx-auto w-full z-20 relative pt-4">
+            {/* Bigger Review Button */}
+            <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-16 text-lg bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={24} /> Review Answers</Button>
+            
             <div className="flex gap-4 w-full">
                 <Button onClick={resetQuiz} variant="secondary" className="flex-1 h-14"><RefreshCw className="mr-2" size={18} /> Play Again</Button>
-                {/* RANK BUTTON */}
-                <Button onClick={() => setView('leaderboard')} variant="outline" className="flex-1 h-14 bg-slate-800/50 border-slate-600 text-yellow-400 font-bold"><Trophy className="mr-2" size={18} /> Rank</Button>
+                {/* RANK BUTTON styled properly */}
+                <Button onClick={() => setView('leaderboard')} variant="outline" className="flex-1 h-14 bg-slate-800/50 border-slate-600 text-yellow-400 font-bold hover:bg-slate-800 hover:text-yellow-300">
+                    <Trophy className="mr-2" size={18} /> Rank
+                </Button>
             </div>
         </div>
       </div>
@@ -976,6 +1021,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
