@@ -3,7 +3,8 @@ import { SubjectPreset, Difficulty, Badge } from './types';
 
 // Get admin email from Environment Variable or fallback to default
 // You can set VITE_ADMIN_EMAIL in your .env file or Vercel Dashboard
-export const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'admin@quizzyvibes.com').toLowerCase().trim();
+// We cast import.meta to any to avoid TypeScript errors when vite types are missing
+export const ADMIN_EMAIL = ((import.meta as any).env?.VITE_ADMIN_EMAIL || 'admin@quizzyvibes.com').toLowerCase().trim();
 
 export const SUBJECT_PRESETS: SubjectPreset[] = [
   // Original
@@ -11,7 +12,7 @@ export const SUBJECT_PRESETS: SubjectPreset[] = [
   { id: 'sci', name: 'Science', icon: 'FlaskConical', description: 'Physics, chemistry, and biology' },
   { id: 'nut', name: 'Nutrition', icon: 'Utensils', description: 'Food, health, and diet' },
   { id: 'tech', name: 'Technology', icon: 'Cpu', description: 'Computers, AI, and innovations' },
-  { id: 'math', name: 'Mathematics', icon: 'Calculator', description: 'Logic, algebra, and numbers' },
+  { id: 'math', name: 'Math Lite', icon: 'Calculator', description: 'Logic, algebra, and numbers' },
   { id: 'gen', name: 'General Knowledge', icon: 'Brain', description: 'A bit of everything' },
   // New Additions
   { id: 'pets', name: 'Pets', icon: 'Cat', description: 'Breeds, care, and animal facts' },
