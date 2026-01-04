@@ -29,7 +29,12 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 const CATEGORY_STORAGE_KEY = 'quizmaster_active_categories';
+
+// Audio Assets
 const DEFAULT_BG_MUSIC = "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=cyberpunk-2099-10586.mp3"; 
+const DEFAULT_TICK_SOUND = "https://cdn.pixabay.com/download/audio/2022/03/24/audio_824f9c5458.mp3?filename=tick-tock-clock-timer-104840.mp3"; 
+const DEFAULT_FINISH_SOUND = "https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c153e2.mp3?filename=success-1-6297.mp3";
+
 const ITEMS_PER_PAGE = 4; 
 
 const Confetti = () => {
@@ -104,9 +109,10 @@ function App() {
   
   const [showExplanation, setShowExplanation] = useState(false);
 
+  // Use refs to access the DOM audio elements
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
-  const customTickRef = useRef<HTMLAudioElement | null>(null);
-  const customFinishRef = useRef<HTMLAudioElement | null>(null);
+  const tickRef = useRef<HTMLAudioElement | null>(null);
+  const finishRef = useRef<HTMLAudioElement | null>(null);
 
   const isAdmin = currentUser?.email && currentUser.email.toLowerCase().trim() === ADMIN_EMAIL;
 
@@ -160,42 +166,7 @@ function App() {
 
   // --- AUDIO LOGIC ---
 
-  // 1. Manage Audio Objects in Response to File Changes
-  useEffect(() => {
-    // Music
-    if (!bgMusicRef.current) {
-        bgMusicRef.current = new Audio(DEFAULT_BG_MUSIC);
-        bgMusicRef.current.loop = true;
-        bgMusicRef.current.volume = 0.5;
-        // Important for mobile to attempt to load metadata
-        bgMusicRef.current.preload = 'auto';
-        bgMusicRef.current.crossOrigin = 'anonymous'; 
-    }
-    const targetSrc = customAudio.music || DEFAULT_BG_MUSIC;
-    // Check strict inequality to prevent reloading same src
-    if (bgMusicRef.current.src !== targetSrc && bgMusicRef.current.src !== window.location.origin + "/" + targetSrc) {
-        bgMusicRef.current.src = targetSrc;
-        bgMusicRef.current.load(); // Reload if source changes
-    }
-
-    // Tick
-    if (customAudio.tick) {
-        customTickRef.current = new Audio(customAudio.tick);
-        customTickRef.current.preload = 'auto';
-    } else {
-        customTickRef.current = null;
-    }
-
-    // Finish
-    if (customAudio.finish) {
-        customFinishRef.current = new Audio(customAudio.finish);
-        customFinishRef.current.preload = 'auto';
-    } else {
-        customFinishRef.current = null;
-    }
-  }, [customAudio]);
-
-  // 2. Control Music Playback
+  // Control Music Playback based on state/view
   useEffect(() => {
     const bgMusic = bgMusicRef.current;
     if (!bgMusic) return;
@@ -208,14 +179,13 @@ function App() {
     } else {
        bgMusic.pause();
     }
-  }, [musicEnabled, view, customAudio.music]); 
+  }, [musicEnabled, view]); 
 
   const handleUploadAudio = (type: 'music' | 'tick' | 'finish', file: File) => {
     const url = URL.createObjectURL(file);
     setCustomAudio(prev => ({ ...prev, [type]: url }));
     setCustomAudioNames(prev => ({ ...prev, [type]: file.name }));
 
-    // Force enable the relevant setting so the user hears it immediately
     if (type === 'music') {
         setMusicEnabled(true);
     } else {
@@ -232,21 +202,24 @@ function App() {
   };
 
   const playTick = useCallback(() => {
-    if (!soundEnabled) return;
-    if (customTickRef.current) {
-        customTickRef.current.currentTime = 0;
-        const p = customTickRef.current.play();
-        if (p !== undefined) p.catch(e => console.warn("Tick play error", e));
-    }
+    if (!soundEnabled || !tickRef.current) return;
+    const audio = tickRef.current;
+    
+    // Reset and Play
+    audio.currentTime = 0;
+    const p = audio.play();
+    if (p !== undefined) p.catch(e => console.warn("Tick play error", e));
+
   }, [soundEnabled]);
 
   const playFinishSound = useCallback(() => {
-    if (!soundEnabled) return;
-    if (customFinishRef.current) {
-        customFinishRef.current.currentTime = 0;
-        const p = customFinishRef.current.play();
-        if (p !== undefined) p.catch(console.warn);
-    }
+    if (!soundEnabled || !finishRef.current) return;
+    const audio = finishRef.current;
+    
+    audio.currentTime = 0;
+    const p = audio.play();
+    if (p !== undefined) p.catch(console.warn);
+
   }, [soundEnabled]);
 
   // --- QUIZ LOGIC ---
@@ -285,7 +258,7 @@ function App() {
   const [config, setConfig] = useState<QuizConfig>({
     subject: '', 
     difficulty: DEFAULT_DIFFICULTY,
-    questionCount: DEFAULT_QUESTION_COUNT, // Defaults to 10
+    questionCount: DEFAULT_QUESTION_COUNT, 
     timerSeconds: DEFAULT_TIMER_SECONDS,
     questions: [],
     lifelinesEnabled: false 
@@ -303,10 +276,8 @@ function App() {
 
   const [earnedBadges, setEarnedBadges] = useState<Badge[]>([]);
 
-  // UPDATE: Reset functionality clears selection and scrolls up
   const resetQuiz = () => {
     setView('welcome');
-    // Ensure Count goes back to DEFAULT (10) explicitly
     setConfig((prev: QuizConfig) => ({ ...prev, subject: '', questionCount: 10 })); 
     setQuizState({
       currentQuestionIndex: 0,
@@ -328,7 +299,6 @@ function App() {
       bgMusicRef.current.currentTime = 0;
     }
     
-    // Go to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -358,6 +328,7 @@ function App() {
 
   useEffect(() => {
     if (view === 'quiz' && config.timerSeconds > 0) {
+      // Play tick sound for last 5 seconds if not frozen
       if (quizState.timeRemaining <= 5 && quizState.timeRemaining > 0 && !isTimeFrozen) {
          playTick();
       }
@@ -396,7 +367,6 @@ function App() {
   const handleStartQuiz = () => {
     setError(null);
 
-    // CHANGED: Specific error message for no subject selected
     if (!config.subject && !customQuestions) {
         setError("Click Go To Top & Choose a Subject");
         return;
@@ -445,29 +415,31 @@ function App() {
 
     setConfig((prev: QuizConfig) => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
     
-    // MOBILE AUDIO FIX: Explicit play on interaction
-    if (musicEnabled && bgMusicRef.current) {
-        bgMusicRef.current.currentTime = 0;
-        const p = bgMusicRef.current.play();
+    // --- AUDIO UNLOCK STRATEGY FOR MOBILE ---
+    // Mobile browsers require audio to be "touched" during an interaction event.
+    // We play them muted for 0s to whitelist them.
+    const unlockAudio = (el: HTMLAudioElement | null) => {
+        if (!el) return;
+        el.volume = 0; // Mute
+        const p = el.play();
         if (p !== undefined) {
-            p.catch(e => console.warn("Music play blocked", e));
+            p.then(() => {
+                el.pause();
+                el.currentTime = 0;
+                el.volume = 1; // Restore volume
+            }).catch(() => {});
         }
+    };
+
+    if (musicEnabled && bgMusicRef.current) {
+         bgMusicRef.current.currentTime = 0;
+         bgMusicRef.current.volume = 0.5; // Set music volume
+         bgMusicRef.current.play().catch(e => console.warn("Music play blocked", e));
     }
     
     if (soundEnabled) {
-        // Unlock strategy: Play and immediately pause to warm up the element
-        const unlock = (audio: HTMLAudioElement) => {
-            const p = audio.play();
-            if (p !== undefined) {
-                p.then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }).catch(e => console.warn("SFX Unlock blocked", e));
-            }
-        };
-
-        if (customTickRef.current) unlock(customTickRef.current);
-        if (customFinishRef.current) unlock(customFinishRef.current);
+        unlockAudio(tickRef.current);
+        unlockAudio(finishRef.current);
     }
 
     setView('quiz');
@@ -522,7 +494,7 @@ function App() {
   const handleNext = () => {
     setHiddenOptions([]);
     setIsTimeFrozen(false);
-    setShowExplanation(false); // Reset explanation view
+    setShowExplanation(false); 
     if (quizState.currentQuestionIndex < config.questions.length - 1) {
       setQuizState(prev => ({
         ...prev,
@@ -563,7 +535,6 @@ function App() {
       if (bgMusicRef.current) {
         bgMusicRef.current.pause();
       }
-      // Scroll to top for results page
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -591,7 +562,6 @@ function App() {
 
     return (
       <div className="max-w-7xl mx-auto w-full animate-fade-in pb-20 pt-24 px-4">
-        {/* Compact Header */}
         <div className="text-center mb-6 md:mb-10">
           <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-2 tracking-tight">
             Choose Your <br className="md:hidden" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Challenge</span>
@@ -744,7 +714,6 @@ function App() {
                   {customQuestions ? 'Start Quiz' : 'Start Challenge'} <ArrowRight className="ml-2" />
                 </Button>
                 
-                {/* Error Message Moved Here - Between Buttons */}
                 {error && (
                     <div className="mt-3 bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-xl text-sm flex items-center justify-center gap-2 animate-pulse font-bold text-center">
                     <AlertCircle className="flex-shrink-0" size={18} />
@@ -772,22 +741,18 @@ function App() {
     if (!question) return <div>Loading...</div>;
     const hasAnswered = quizState.answers[quizState.currentQuestionIndex] !== undefined;
     
-    // FULL SCREEN LAYOUT
     return (
       <div className="fixed inset-0 z-[60] bg-[#020617] flex flex-col h-[100dvh]">
-        {/* Top Bar: Bigger & Centralized */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-slate-900/90 border-b border-slate-800 backdrop-blur-md">
-             <div className="w-10"></div> {/* Spacer for centering */}
+             <div className="w-10"></div> 
              
              <div className="flex flex-col items-center">
-                 {/* Bigger Timer */}
                  {config.timerSeconds > 0 && (
                      <div className={`flex items-center gap-2 font-mono text-3xl font-bold leading-none mb-1 ${isTimeFrozen ? 'text-cyan-400' : quizState.timeRemaining <= 5 ? 'text-red-500' : 'text-blue-400'}`}>
                          {isTimeFrozen ? <Snowflake size={24} /> : null}
                          {quizState.timeRemaining}
                      </div>
                  )}
-                 {/* Q Number */}
                  <div className="text-slate-400 font-bold text-lg leading-none">
                      Question {quizState.currentQuestionIndex + 1} <span className="text-slate-600 text-sm">/ {config.questions.length}</span>
                  </div>
@@ -798,25 +763,19 @@ function App() {
              </button>
         </div>
 
-        {/* Progress Bar */}
         <div className="h-1.5 w-full bg-slate-800 flex-shrink-0">
              <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${((quizState.currentQuestionIndex + 1) / config.questions.length) * 100}%` }}></div>
         </div>
 
-        {/* Main Content Area - Flex Grow */}
         <div className="flex-1 overflow-hidden p-4 flex flex-col relative bg-gradient-to-b from-[#020617] to-slate-950">
             {showExplanation ? (
-                // UPDATED EXPLANATION VIEW: Shows Question + Answer + Explanation without options
                 <div className="flex-1 flex flex-col animate-fade-in h-full overflow-y-auto custom-scrollbar">
-                     
-                     {/* 1. Reuse Question Box */}
                      <div className="flex-shrink-0 mb-6 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-6 min-h-[140px] flex items-center justify-center shadow-inner">
                         <h2 className="text-2xl md:text-3xl font-display font-bold text-white leading-snug text-center opacity-70">
                             {question.text}
                         </h2>
                      </div>
 
-                     {/* 2. Big Correct Answer */}
                      <div className="mb-6 text-center animate-slide-up">
                          <div className="text-sm font-bold text-green-400 uppercase tracking-widest mb-2">Correct Answer</div>
                          <div className="text-3xl md:text-5xl font-bold text-white drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">
@@ -824,7 +783,6 @@ function App() {
                          </div>
                      </div>
 
-                     {/* 3. Explanation Text */}
                      {question.explanation && (
                         <div className="bg-blue-900/10 border border-blue-500/20 p-6 rounded-2xl text-center max-w-2xl mx-auto mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
                             <div className="flex items-center justify-center gap-2 mb-3 text-blue-300">
@@ -837,7 +795,6 @@ function App() {
                         </div>
                      )}
                      
-                     {/* 4. Centralized Next Button */}
                      <div className="mt-auto pb-6 flex justify-center animate-slide-up" style={{animationDelay: '0.2s'}}>
                         <Button 
                             onClick={handleNext} 
@@ -848,7 +805,6 @@ function App() {
                      </div>
                 </div>
             ) : (
-                // QUIZ CARD
                 <QuizCard 
                     question={question}
                     selectedAnswer={quizState.answers[quizState.currentQuestionIndex]}
@@ -859,7 +815,6 @@ function App() {
             )}
         </div>
 
-        {/* Bottom Actions - Hidden during explanation view as button is now inside */}
         {!showExplanation && (
             <div className="flex-shrink-0 p-4 bg-slate-900/80 border-t border-slate-800 backdrop-blur-lg">
                 {hasAnswered ? (
@@ -906,7 +861,6 @@ function App() {
       {percentage === 100 && <Confetti />}
       <div className="max-w-2xl mx-auto w-full py-8 animate-slide-up text-center space-y-6 pt-24 relative z-10 px-4">
         
-        {/* Slightly Smaller Trophy */}
         <div className="relative inline-block">
             <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full"></div>
             <Trophy className={`w-24 h-24 mx-auto ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} relative z-10 drop-shadow-2xl`} />
@@ -948,12 +902,10 @@ function App() {
         </div>
 
         <div className="flex flex-col gap-4 max-w-sm mx-auto w-full z-20 relative pt-4">
-            {/* Bigger Review Button */}
             <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-16 text-lg bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={24} /> Review Answers</Button>
             
             <div className="flex gap-4 w-full">
                 <Button onClick={resetQuiz} variant="secondary" className="flex-1 h-14"><RefreshCw className="mr-2" size={18} /> Play Again</Button>
-                {/* RANK BUTTON styled properly */}
                 <Button onClick={() => setView('leaderboard')} variant="outline" className="flex-1 h-14 bg-slate-800/50 border-slate-600 text-yellow-400 font-bold hover:bg-slate-800 hover:text-yellow-300">
                     <Trophy className="mr-2" size={18} /> Rank
                 </Button>
@@ -1047,11 +999,17 @@ function App() {
             {view === 'leaderboard' && <Leaderboard />}
             {view === 'admin' && <AdminDashboard />}
         </main>
+        
+        {/* DOM Audio Elements for robust mobile playback */}
+        <audio ref={bgMusicRef} src={customAudio.music || DEFAULT_BG_MUSIC} loop preload="auto" crossOrigin="anonymous" />
+        <audio ref={tickRef} src={customAudio.tick || DEFAULT_TICK_SOUND} preload="auto" crossOrigin="anonymous" />
+        <audio ref={finishRef} src={customAudio.finish || DEFAULT_FINISH_SOUND} preload="auto" crossOrigin="anonymous" />
     </div>
   );
 }
 
 export default App;
+
 
 
 
