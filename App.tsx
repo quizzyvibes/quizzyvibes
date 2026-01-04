@@ -158,6 +158,7 @@ function App() {
     setCurrentUser(updatedUser);
   };
 
+  // Initialize Music
   useEffect(() => {
     bgMusicRef.current = new Audio(DEFAULT_BG_MUSIC);
     bgMusicRef.current.loop = true;
@@ -171,25 +172,40 @@ function App() {
     };
   }, []);
 
+  // Handle Music Changes and Toggle
   useEffect(() => {
-    if (bgMusicRef.current) {
-        const wasPlaying = !bgMusicRef.current.paused;
-        bgMusicRef.current.src = customAudio.music || DEFAULT_BG_MUSIC;
-        if (wasPlaying) {
-            bgMusicRef.current.play().catch(console.warn);
-        }
+    const bgMusic = bgMusicRef.current;
+    if (!bgMusic) return;
+
+    // Update src if changed
+    const targetSrc = customAudio.music || DEFAULT_BG_MUSIC;
+    // We only update if strict inequality to avoid reloading
+    if (bgMusic.src !== targetSrc && bgMusic.src !== window.location.origin + "/" + targetSrc) {
+       bgMusic.src = targetSrc;
     }
-  }, [customAudio.music]);
+
+    if (musicEnabled && view === 'quiz') {
+       bgMusic.play().catch(e => console.log("Audio play prevented:", e));
+    } else {
+       bgMusic.pause();
+    }
+  }, [musicEnabled, view, customAudio.music]);
 
   const handleUploadAudio = (type: 'music' | 'tick' | 'finish', file: File) => {
     const url = URL.createObjectURL(file);
     setCustomAudio(prev => ({ ...prev, [type]: url }));
     setCustomAudioNames(prev => ({ ...prev, [type]: file.name }));
 
+    // Immediately update refs for immediate playback availability
     if (type === 'tick') {
         customTickRef.current = new Audio(url);
     } else if (type === 'finish') {
         customFinishRef.current = new Audio(url);
+    } else if (type === 'music') {
+        if (bgMusicRef.current) {
+            bgMusicRef.current.src = url;
+            if (musicEnabled) bgMusicRef.current.play().catch(console.warn);
+        }
     }
   };
 
@@ -243,25 +259,26 @@ function App() {
 
   const playTick = useCallback(() => {
     if (!soundEnabled) return;
-    if (customAudio.tick && customTickRef.current) {
+    // Play custom tick if available
+    if (customTickRef.current) {
         customTickRef.current.currentTime = 0;
         customTickRef.current.play().catch(e => console.warn("Tick play error", e));
     }
-  }, [soundEnabled, customAudio.tick]);
+  }, [soundEnabled]);
 
   const playFinishSound = useCallback(() => {
     if (!soundEnabled) return;
-    if (customAudio.finish && customFinishRef.current) {
+    if (customFinishRef.current) {
         customFinishRef.current.currentTime = 0;
         customFinishRef.current.play().catch(console.warn);
     }
-  }, [soundEnabled, customAudio.finish]);
+  }, [soundEnabled]);
 
   // UPDATE: Default lifelinesEnabled to false
   const [config, setConfig] = useState<QuizConfig>({
     subject: '', 
     difficulty: DEFAULT_DIFFICULTY,
-    questionCount: DEFAULT_QUESTION_COUNT,
+    questionCount: DEFAULT_QUESTION_COUNT, // Ensure defaults to 10
     timerSeconds: DEFAULT_TIMER_SECONDS,
     questions: [],
     lifelinesEnabled: false 
@@ -332,22 +349,6 @@ function App() {
   };
 
   useEffect(() => {
-    const bgMusic = bgMusicRef.current;
-    if (!bgMusic) return;
-
-    if (view === 'quiz' && musicEnabled) {
-       const playPromise = bgMusic.play();
-       if (playPromise !== undefined) {
-           playPromise.catch(error => {
-               console.log("Auto-play prevented (user interaction needed):", error);
-           });
-       }
-    } else {
-      bgMusic.pause();
-    }
-  }, [musicEnabled, view]);
-
-  useEffect(() => {
     if (view === 'quiz' && config.timerSeconds > 0) {
       if (quizState.timeRemaining <= 5 && quizState.timeRemaining > 0 && !isTimeFrozen) {
          playTick();
@@ -387,8 +388,9 @@ function App() {
   const handleStartQuiz = () => {
     setError(null);
 
+    // CHANGED: Specific error message for no subject selected
     if (!config.subject && !customQuestions) {
-        setError("Please select a quiz category to start!");
+        setError("Click Go To Top & Choose a Subject");
         return;
     }
 
@@ -435,6 +437,7 @@ function App() {
 
     setConfig(prev => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
     
+    // Explicitly play music if enabled
     if (musicEnabled && bgMusicRef.current) {
       bgMusicRef.current.currentTime = 0;
       bgMusicRef.current.play().catch(console.warn);
@@ -714,6 +717,14 @@ function App() {
                   {customQuestions ? 'Start Quiz' : 'Start Challenge'} <ArrowRight className="ml-2" />
                 </Button>
                 
+                {/* Error Message Moved Here - Between Buttons */}
+                {error && (
+                    <div className="mt-3 bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-xl text-sm flex items-center justify-center gap-2 animate-pulse font-bold text-center">
+                    <AlertCircle className="flex-shrink-0" size={18} />
+                    {error}
+                    </div>
+                )}
+
                 <button onClick={scrollToTop} className="w-full mt-3 py-3 rounded-xl bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-all text-sm font-bold flex items-center justify-center gap-2">
                     <ArrowUp size={16} /> Go To Top
                 </button>
@@ -722,13 +733,6 @@ function App() {
                      <p className="text-center text-slate-500 text-sm mt-3 animate-pulse">Select a category to begin</p>
                 )}
               </div>
-
-              {error && (
-                <div className="mt-4 bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-xl text-sm flex items-start gap-2 animate-pulse">
-                  <AlertCircle className="flex-shrink-0" size={18} />
-                  {error}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1021,6 +1025,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
