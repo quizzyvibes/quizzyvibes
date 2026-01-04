@@ -158,37 +158,48 @@ function App() {
     setCurrentUser(updatedUser);
   };
 
-  // Initialize Music
+  // --- AUDIO LOGIC ---
+
+  // 1. Manage Audio Objects in Response to File Changes
   useEffect(() => {
-    bgMusicRef.current = new Audio(DEFAULT_BG_MUSIC);
-    bgMusicRef.current.loop = true;
-    bgMusicRef.current.volume = 0.5;
+    // Music
+    if (!bgMusicRef.current) {
+        bgMusicRef.current = new Audio(DEFAULT_BG_MUSIC);
+        bgMusicRef.current.loop = true;
+        bgMusicRef.current.volume = 0.5;
+    }
+    const targetSrc = customAudio.music || DEFAULT_BG_MUSIC;
+    // Check strict inequality to prevent reloading same src
+    if (bgMusicRef.current.src !== targetSrc && bgMusicRef.current.src !== window.location.origin + "/" + targetSrc) {
+        bgMusicRef.current.src = targetSrc;
+    }
 
-    return () => {
-      if (bgMusicRef.current) {
-        bgMusicRef.current.pause();
-        bgMusicRef.current = null;
-      }
-    };
-  }, []);
+    // Tick
+    if (customAudio.tick) {
+        customTickRef.current = new Audio(customAudio.tick);
+    } else {
+        customTickRef.current = null;
+    }
 
-  // Handle Music Changes and Toggle
+    // Finish
+    if (customAudio.finish) {
+        customFinishRef.current = new Audio(customAudio.finish);
+    } else {
+        customFinishRef.current = null;
+    }
+  }, [customAudio]);
+
+  // 2. Control Music Playback
   useEffect(() => {
     const bgMusic = bgMusicRef.current;
     if (!bgMusic) return;
-
-    // Update src if changed
-    const targetSrc = customAudio.music || DEFAULT_BG_MUSIC;
-    if (bgMusic.src !== targetSrc && bgMusic.src !== window.location.origin + "/" + targetSrc) {
-       bgMusic.src = targetSrc;
-    }
 
     if (musicEnabled && view === 'quiz') {
        bgMusic.play().catch(e => console.log("Audio play prevented:", e));
     } else {
        bgMusic.pause();
     }
-  }, [musicEnabled, view, customAudio.music]);
+  }, [musicEnabled, view, customAudio.music]); // Depend on customAudio.music to restart if file changes during quiz
 
   const handleUploadAudio = (type: 'music' | 'tick' | 'finish', file: File) => {
     const url = URL.createObjectURL(file);
@@ -198,14 +209,8 @@ function App() {
     // Force enable the relevant setting so the user hears it immediately
     if (type === 'music') {
         setMusicEnabled(true);
-        if (bgMusicRef.current) {
-            bgMusicRef.current.src = url;
-            if (view === 'quiz') bgMusicRef.current.play().catch(console.warn);
-        }
     } else {
         setSoundEnabled(true);
-        if (type === 'tick') customTickRef.current = new Audio(url);
-        if (type === 'finish') customFinishRef.current = new Audio(url);
     }
   };
 
@@ -215,16 +220,25 @@ function App() {
     }
     setCustomAudio(prev => ({ ...prev, [type]: null }));
     setCustomAudioNames(prev => ({ ...prev, [type]: undefined }));
-
-    if (type === 'tick') customTickRef.current = null;
-    else if (type === 'finish') customFinishRef.current = null;
-    else if (type === 'music' && bgMusicRef.current) {
-        bgMusicRef.current.src = DEFAULT_BG_MUSIC;
-        if (musicEnabled && view === 'quiz') {
-            bgMusicRef.current.play().catch(console.warn);
-        }
-    }
   };
+
+  const playTick = useCallback(() => {
+    if (!soundEnabled) return;
+    if (customTickRef.current) {
+        customTickRef.current.currentTime = 0;
+        customTickRef.current.play().catch(e => console.warn("Tick play error", e));
+    }
+  }, [soundEnabled]);
+
+  const playFinishSound = useCallback(() => {
+    if (!soundEnabled) return;
+    if (customFinishRef.current) {
+        customFinishRef.current.currentTime = 0;
+        customFinishRef.current.play().catch(console.warn);
+    }
+  }, [soundEnabled]);
+
+  // --- QUIZ LOGIC ---
 
   const handleUploadQuestions = async (file: File) => {
     try {
@@ -257,23 +271,6 @@ function App() {
     setConfig(prev => ({ ...prev, questionCount: DEFAULT_QUESTION_COUNT }));
   };
 
-  const playTick = useCallback(() => {
-    if (!soundEnabled) return;
-    // Play custom tick if available
-    if (customTickRef.current) {
-        customTickRef.current.currentTime = 0;
-        customTickRef.current.play().catch(e => console.warn("Tick play error", e));
-    }
-  }, [soundEnabled]);
-
-  const playFinishSound = useCallback(() => {
-    if (!soundEnabled) return;
-    if (customFinishRef.current) {
-        customFinishRef.current.currentTime = 0;
-        customFinishRef.current.play().catch(console.warn);
-    }
-  }, [soundEnabled]);
-
   const [config, setConfig] = useState<QuizConfig>({
     subject: '', 
     difficulty: DEFAULT_DIFFICULTY,
@@ -298,7 +295,8 @@ function App() {
   // UPDATE: Reset functionality clears selection and scrolls up
   const resetQuiz = () => {
     setView('welcome');
-    setConfig(prev => ({ ...prev, subject: '', questionCount: DEFAULT_QUESTION_COUNT })); // Ensure 10 questions on reset
+    // Ensure Count goes back to DEFAULT (10)
+    setConfig(prev => ({ ...prev, subject: '', questionCount: DEFAULT_QUESTION_COUNT })); 
     setQuizState({
       currentQuestionIndex: 0,
       score: 0,
@@ -421,6 +419,8 @@ function App() {
     } else {
       const rawQuestions = loadQuestionsForTopic(config.subject, config.difficulty);
       if (rawQuestions.length === 0) {
+        // This won't trigger if subject is empty, because of the first check.
+        // It triggers if subject is selected but file has no questions for that category.
         setError(`No hardwired questions found for ${config.subject} (${config.difficulty}). Please upload questions.`);
         return;
       }
@@ -1024,6 +1024,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
