@@ -1,7 +1,9 @@
 
 import { SubjectPreset, Difficulty, Badge } from './types';
 
-export const ADMIN_EMAIL = 'admin@quizzyvibes.com';
+// Get admin email from Environment Variable or fallback to default
+// You can set VITE_ADMIN_EMAIL in your .env file or Vercel Dashboard
+export const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'admin@quizzyvibes.com').toLowerCase().trim();
 
 export const SUBJECT_PRESETS: SubjectPreset[] = [
   // Original
@@ -34,3 +36,4 @@ export const BADGES: Badge[] = [
   { id: 'dedicated', name: 'Dedicated', description: 'Complete 10 quizzes', icon: 'Medal' },
   { id: 'science_whiz', name: 'Science Whiz', description: 'Get 100% on a Science quiz', icon: 'FlaskConical' },
 ];
+
