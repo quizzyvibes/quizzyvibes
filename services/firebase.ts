@@ -1,4 +1,3 @@
-
 /// <reference types="vite/client" />
 import { initializeApp } from "firebase/app";
 import { 
@@ -22,9 +21,10 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  arrayUnion
+  arrayUnion,
+  onSnapshot
 } from "firebase/firestore";
-import { User, QuizResult, Badge } from "../types";
+import { User, QuizResult, Badge, Question } from "../types";
 import { BADGES } from "../constants";
 
 // --- CONFIGURATION ---
@@ -127,7 +127,11 @@ export const loginAsGuest = async (): Promise<User> => {
 };
 
 export const logout = async () => {
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Error signing out", error);
+  }
 };
 
 export const subscribeToAuth = (callback: (user: User | null) => void) => {
@@ -275,6 +279,59 @@ export const getAllResultsFromCloud = async (): Promise<QuizResult[]> => {
     } catch (e) {
         return [];
     }
+};
+
+// --- GLOBAL GAME CONFIG (ADMIN SYNC) ---
+
+export interface GlobalConfig {
+    questions: Question[]; // Stored as JSON string to avoid depth issues if necessary, or raw array
+    fileName: string;
+    updatedAt: number;
+    activeSubjectIds?: string[];
+}
+
+// Admin only function
+export const saveGlobalQuizConfig = async (questions: Question[], fileName: string, activeSubjectIds: string[]) => {
+    try {
+        const configRef = doc(db, "global_config", "main");
+        // Firestore has a 1MB limit. 
+        // We strip optional heavy fields if needed, but for text questions 1MB is usually plenty (approx 2000 questions).
+        await setDoc(configRef, {
+            questions: JSON.stringify(questions),
+            fileName,
+            updatedAt: Date.now(),
+            activeSubjectIds
+        });
+        return true;
+    } catch (e) {
+        console.error("Failed to sync global config:", e);
+        throw e;
+    }
+};
+
+// All users subscribe
+export const subscribeToGlobalConfig = (callback: (config: GlobalConfig | null) => void) => {
+    const configRef = doc(db, "global_config", "main");
+    return onSnapshot(configRef, (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            try {
+                // Parse questions back from string
+                const questions = JSON.parse(data.questions);
+                callback({
+                    questions,
+                    fileName: data.fileName,
+                    updatedAt: data.updatedAt,
+                    activeSubjectIds: data.activeSubjectIds
+                });
+            } catch (e) {
+                console.error("Error parsing global questions", e);
+                callback(null);
+            }
+        } else {
+            callback(null);
+        }
+    });
 };
 
 
