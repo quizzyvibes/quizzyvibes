@@ -86,3 +86,4 @@ const Leaderboard: React.FC = () => {
 };
 
 export default Leaderboard;
+
