@@ -1,13 +1,32 @@
-
-import React, { useMemo } from 'react';
-import { getAllUsers, getAllResults } from '../services/storageService';
+import React, { useMemo, useState, useEffect } from 'react';
+import { getAllUsersFromCloud, getAllResultsFromCloud } from '../services/firebase';
 import { format } from 'date-fns';
 import { User, QuizResult } from '../types';
-import { ShieldAlert, Globe, Activity, TrendingUp, BarChart2, Mail, Hash } from 'lucide-react';
+import { ShieldAlert, Globe, Activity, TrendingUp, BarChart2, Mail } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
-  const users = getAllUsers();
-  const allResults = getAllResults();
+  const [users, setUsers] = useState<User[]>([]);
+  const [allResults, setAllResults] = useState<QuizResult[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data from Firebase on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [usersData, resultsData] = await Promise.all([
+          getAllUsersFromCloud(),
+          getAllResultsFromCloud()
+        ]);
+        setUsers(usersData);
+        setAllResults(resultsData);
+      } catch (error) {
+        console.error("Failed to fetch admin data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Process data for analytics
   const processedUsers = useMemo(() => {
@@ -29,7 +48,6 @@ const AdminDashboard: React.FC = () => {
       const topSubject = Object.entries(categoryStats).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
 
       // Mock Country based on email domain or hash
-      // A simple deterministic way to assign a country for demo
       const countries = ['USA', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'India', 'Japan', 'Brazil', 'Singapore'];
       const hash = user.email.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const country = countries[hash % countries.length];
@@ -44,6 +62,14 @@ const AdminDashboard: React.FC = () => {
       };
     }).sort((a, b) => b.totalQuizzes - a.totalQuizzes); // Sort by activity
   }, [users, allResults]);
+
+  if (loading) {
+    return (
+        <div className="min-h-screen flex items-center justify-center pt-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+        </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto w-full space-y-8 animate-slide-up pt-40 pb-20">
@@ -176,6 +202,13 @@ const AdminDashboard: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {processedUsers.length === 0 && (
+                  <tr>
+                      <td colSpan={6} className="p-8 text-center text-slate-500">
+                          No registered users found in Cloud Database.
+                      </td>
+                  </tr>
+              )}
             </tbody>
           </table>
         </div>
