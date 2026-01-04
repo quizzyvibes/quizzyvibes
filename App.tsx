@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Brain, ArrowRight, RefreshCw, Trophy, XCircle, Sparkles,
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 const CATEGORY_STORAGE_KEY = 'quizmaster_active_categories';
 const DEFAULT_BG_MUSIC = "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=cyberpunk-2099-10586.mp3"; 
+const ITEMS_PER_PAGE = 4; // Changed from 6 to 4 per user request
 
 const Confetti = () => {
   return (
@@ -74,7 +76,6 @@ function App() {
   const [activeSubjectIds, setActiveSubjectIds] = useState<string[]>([]);
   const [categoryPage, setCategoryPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const ITEMS_PER_PAGE = 6;
 
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -554,24 +555,32 @@ function App() {
     };
 
     return (
-      <div className="max-w-7xl mx-auto w-full animate-fade-in pb-20 pt-24 md:pt-32 px-4">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-6 tracking-tight">
-            Choose Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Challenge</span>
+      <div className="max-w-7xl mx-auto w-full animate-fade-in pb-20 pt-20 px-4">
+        {/* Compact Header */}
+        <div className="text-center mb-6 md:mb-10">
+          <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2 tracking-tight">
+            Choose Your <br className="md:hidden" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Challenge</span>
           </h1>
-          <p className="text-blue-100/80 text-xl max-w-2xl mx-auto font-medium">
-            Select a subject, customize your difficulty, and test your knowledge.
-          </p>
-           <div className="mt-6 flex justify-center animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-900/20 border border-blue-500/20 text-blue-200/60 text-xs font-medium backdrop-blur-sm">
-                <Globe size={14} />
-                <span>Cloud Connected • Progress Saved Online</span>
-            </div>
-          </div>
+          
+          {/* Admin Only Fluff */}
+          {isAdmin && (
+              <>
+                <p className="text-blue-100/80 text-sm md:text-lg max-w-2xl mx-auto font-medium">
+                    Select a subject, customize your difficulty, and test your knowledge.
+                </p>
+                <div className="mt-4 flex justify-center animate-fade-in">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-900/20 border border-blue-500/20 text-blue-200/60 text-xs font-medium backdrop-blur-sm">
+                        <Globe size={14} />
+                        <span>Cloud Connected • Progress Saved Online</span>
+                    </div>
+                </div>
+              </>
+          )}
         </div>
 
+        {/* Global Banner - Admin Only */}
         {isAdmin && customQuestions && (
-          <div className="max-w-3xl mx-auto mb-12 bg-indigo-500/10 border border-indigo-500/50 rounded-2xl p-4 flex items-center justify-between animate-slide-up shadow-xl shadow-indigo-500/10">
+          <div className="max-w-3xl mx-auto mb-8 bg-indigo-500/10 border border-indigo-500/50 rounded-2xl p-4 flex items-center justify-between animate-slide-up shadow-xl shadow-indigo-500/10">
             <div className="flex items-center gap-4">
                 <div className="p-2 bg-indigo-500 rounded-lg text-white">
                   <FileSpreadsheet size={24} />
@@ -588,41 +597,28 @@ function App() {
                   </p>
                 </div>
             </div>
-            <div className="text-green-400 flex items-center gap-1 text-sm font-medium">
-                  <CheckCircle2 size={16} /> Synced Globally
-            </div>
           </div>
-        )}
-
-        {/* Global State Notice for Non-Admins */}
-        {!isAdmin && customQuestions && (
-           <div className="max-w-3xl mx-auto mb-12 bg-indigo-500/10 border border-indigo-500/50 rounded-2xl p-4 flex items-center gap-4 animate-slide-up">
-              <div className="p-2 bg-indigo-500 rounded-lg text-white">
-                  <FileSpreadsheet size={24} />
-              </div>
-              <div>
-                  <h3 className="text-white font-bold text-lg">Live Quiz Event</h3>
-                  <p className="text-indigo-200 text-sm">
-                      The host has loaded a custom question set: <span className="font-bold text-white">{customFileName}</span>.
-                  </p>
-              </div>
-           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 relative">
-            <div className="relative max-w-md mx-auto mb-8">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input 
-                    type="text" 
-                    placeholder="Search subjects..." 
-                    value={searchTerm}
-                    onChange={(e) => { setSearchTerm(e.target.value); setCategoryPage(0); }}
-                    className="w-full bg-slate-900/60 border border-slate-700 rounded-2xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500"
-                />
-            </div>
+            
+            {/* Search - Admin Only */}
+            {isAdmin && (
+                <div className="relative max-w-md mx-auto mb-6">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <input 
+                        type="text" 
+                        placeholder="Search subjects..." 
+                        value={searchTerm}
+                        onChange={(e) => { setSearchTerm(e.target.value); setCategoryPage(0); }}
+                        className="w-full bg-slate-900/60 border border-slate-700 rounded-2xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-500"
+                    />
+                </div>
+            )}
 
-            <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 transition-opacity duration-300 min-h-[400px] content-start ${customQuestions && !hasCustomSubjects ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+            {/* Grid - 2 cols on mobile, 4 cols total in logic but UI can adjust */}
+            <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 transition-opacity duration-300 min-h-[320px] content-start ${customQuestions && !hasCustomSubjects ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
               {displayedPresets.length > 0 ? displayedPresets.map(preset => {
                 const Icon = ICON_MAP[preset.icon] || Brain;
                 const isSelected = config.subject === preset.id;
@@ -630,19 +626,16 @@ function App() {
                   <button
                     key={preset.id}
                     onClick={() => handleSubjectSelect(preset.id)}
-                    className={`p-3 md:p-6 rounded-3xl border text-left transition-all duration-300 group relative overflow-hidden flex flex-col justify-between min-h-[160px] h-auto md:h-44 ${
+                    className={`p-4 rounded-3xl border text-center transition-all duration-300 group relative overflow-hidden flex flex-col justify-center items-center h-32 md:h-40 ${
                       isSelected 
                         ? 'border-blue-400 bg-gradient-to-br from-blue-900/80 to-blue-800/40 shadow-xl shadow-blue-500/10 scale-[1.02]' 
                         : 'border-slate-700 bg-slate-900/40 hover:bg-slate-800 hover:border-slate-600 hover:shadow-lg hover:-translate-y-1'
                     }`}
                   >
-                    <div className={`p-2 md:p-3 rounded-2xl w-fit transition-colors ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 group-hover:text-white group-hover:bg-slate-700'}`}>
-                      <Icon size={24} className="md:w-7 md:h-7" />
+                    <div className={`mb-3 p-2 rounded-2xl w-fit transition-colors mx-auto ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 group-hover:text-white group-hover:bg-slate-700'}`}>
+                      <Icon size={24} className="md:w-8 md:h-8" />
                     </div>
-                    <div>
-                      <h3 className={`font-bold text-base md:text-lg break-words hyphens-auto ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
-                      <p className={`text-sm mt-1 md:mt-2 line-clamp-2 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>{preset.description}</p>
-                    </div>
+                    <h3 className={`font-bold text-sm md:text-base leading-tight ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
                   </button>
                 )
               }) : (
@@ -655,14 +648,14 @@ function App() {
             </div>
 
             {totalPages > 1 && (!customQuestions || hasCustomSubjects) && (
-              <div className="flex justify-between items-center mt-6 px-2">
+              <div className="flex justify-between items-center mt-4 px-2">
                 <Button 
                    onClick={handlePrevPage} 
                    disabled={categoryPage === 0}
                    variant="secondary"
-                   className="w-12 h-12 !px-0 rounded-full"
+                   className="w-10 h-10 !px-0 rounded-full"
                 >
-                   <ChevronLeft size={24} />
+                   <ChevronLeft size={20} />
                 </Button>
                 
                 <div className="flex gap-2">
@@ -678,9 +671,9 @@ function App() {
                    onClick={handleNextPage} 
                    disabled={categoryPage === totalPages - 1}
                    variant="secondary"
-                   className="w-12 h-12 !px-0 rounded-full"
+                   className="w-10 h-10 !px-0 rounded-full"
                 >
-                   <ChevronRight size={24} />
+                   <ChevronRight size={20} />
                 </Button>
               </div>
             )}
@@ -689,7 +682,7 @@ function App() {
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <div className="sticky top-28" ref={settingsRef}>
+            <div ref={settingsRef}>
               <SettingsPanel 
                   user={currentUser}
                   count={config.questionCount}
@@ -716,7 +709,7 @@ function App() {
                   onToggleSubject={handleToggleSubject}
               />
 
-              <div className="mt-8">
+              <div className="mt-8 pb-10">
                 <Button 
                   fullWidth 
                   onClick={handleStartQuiz} 
@@ -747,45 +740,40 @@ function App() {
     const question = config.questions[quizState.currentQuestionIndex];
     if (!question) return <div>Loading...</div>;
     const hasAnswered = quizState.answers[quizState.currentQuestionIndex] !== undefined;
-    const radius = 28; 
-    const circumference = 2 * Math.PI * radius; 
-    const offset = circumference - (quizState.timeRemaining / config.timerSeconds) * circumference;
-
+    
+    // FULL SCREEN LAYOUT
     return (
-      <>
-      <div className="max-w-4xl mx-auto w-full flex flex-col pt-20 pb-24 md:pb-8 relative min-h-[calc(100vh-80px)]">
-        <div className="flex items-center justify-between px-2 mb-4">
-            <div className="flex items-center gap-4 md:gap-6">
-                {config.timerSeconds > 0 && (
-                    <div className="relative w-14 h-14 md:w-16 md:h-16 flex-shrink-0">
-                        <svg className="w-full h-full" viewBox="0 0 64 64">
-                            <circle cx="32" cy="32" r={radius} stroke="#1e293b" strokeWidth="6" fill="transparent" />
-                            <circle cx="32" cy="32" r={radius} stroke="currentColor" strokeWidth="6" fill="transparent" className={`${isTimeFrozen ? 'text-cyan-400' : (quizState.timeRemaining <= 5 ? 'text-red-500' : 'text-blue-500')} transition-all duration-1000 ease-linear`} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform="rotate(-90 32 32)" />
-                             <text x="32" y="32" fill="white" fontSize="22" fontWeight="bold" fontFamily="monospace" textAnchor="middle" dominantBaseline="central" dy="1">
-                                {isTimeFrozen ? '❄' : quizState.timeRemaining}
-                            </text>
-                        </svg>
-                    </div>
-                )}
-                <div className="text-left">
-                   <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Question</div>
-                   <div className="flex items-baseline text-3xl font-display font-bold text-white leading-none">
-                      <span className="text-blue-400">{quizState.currentQuestionIndex + 1}</span>
-                      <span className="text-slate-500 text-2xl mx-2">/</span>
-                      <span className="text-slate-400 text-2xl">{config.questions.length}</span>
-                   </div>
-                </div>
-            </div>
-            <button onClick={resetQuiz} className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors bg-slate-900/50 px-3 py-2 md:px-5 md:py-3 rounded-xl hover:bg-red-500/10 hover:border-red-500/30 border border-slate-800">
-                <XCircle size={20} /> <span className="font-bold hidden md:inline">Quit</span>
-            </button>
-        </div>
-        
-        <div className="h-2 md:h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800/50 mb-6">
-            <div className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-500 ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)]" style={{ width: `${((quizState.currentQuestionIndex + 1) / config.questions.length) * 100}%` }} />
+      <div className="fixed inset-0 z-[60] bg-[#020617] flex flex-col h-[100dvh]">
+        {/* Top Bar: Timer, Q No, Quit - Very Compact */}
+        <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 bg-slate-900/50 border-b border-slate-800">
+             <div className="flex items-center gap-3">
+                 {/* Compact Timer */}
+                 {config.timerSeconds > 0 && (
+                     <div className={`flex items-center gap-1 font-mono text-xl font-bold ${isTimeFrozen ? 'text-cyan-400' : quizState.timeRemaining <= 5 ? 'text-red-500' : 'text-blue-400'}`}>
+                         {isTimeFrozen ? <Snowflake size={16} /> : <div className="w-2 h-2 rounded-full bg-current animate-pulse"></div>}
+                         {quizState.timeRemaining}s
+                     </div>
+                 )}
+                 <div className="w-px h-6 bg-slate-700"></div>
+                 {/* Q Number */}
+                 <div className="text-slate-300 font-bold text-sm">
+                     <span className="text-white">{quizState.currentQuestionIndex + 1}</span>
+                     <span className="opacity-50">/</span>
+                     <span className="opacity-50">{config.questions.length}</span>
+                 </div>
+             </div>
+             <button onClick={resetQuiz} className="text-slate-400 hover:text-white p-2">
+                 <XCircle size={24} />
+             </button>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center">
+        {/* Progress Bar */}
+        <div className="h-1 w-full bg-slate-800 flex-shrink-0">
+             <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${((quizState.currentQuestionIndex + 1) / config.questions.length) * 100}%` }}></div>
+        </div>
+
+        {/* Main Content Area - Flex Grow */}
+        <div className="flex-1 overflow-hidden p-2 flex flex-col relative">
             <QuizCard 
                 question={question}
                 selectedAnswer={quizState.answers[quizState.currentQuestionIndex]}
@@ -794,25 +782,28 @@ function App() {
                 hiddenOptions={hiddenOptions} 
             />
             
-            {config.lifelinesEnabled && !hasAnswered && (
-                <div className="flex justify-center gap-6 mt-6">
-                     <button onClick={handleUse5050} disabled={quizState.lifelinesUsed.fiftyFifty} className={`flex items-center gap-2 px-5 py-3 rounded-full font-bold shadow-lg transition-all border-2 ${quizState.lifelinesUsed.fiftyFifty ? 'bg-slate-800 border-slate-700 text-slate-600 opacity-50 cursor-not-allowed' : 'bg-indigo-600 border-indigo-400 text-white hover:scale-105 hover:bg-indigo-500 hover:shadow-indigo-500/50'}`}>
-                         <Zap size={18} className={quizState.lifelinesUsed.fiftyFifty ? '' : 'fill-yellow-400 text-yellow-400'} /> 50:50
-                     </button>
-                     <button onClick={handleUseTimeFreeze} disabled={quizState.lifelinesUsed.timeFreeze || config.timerSeconds === 0} className={`flex items-center gap-2 px-5 py-3 rounded-full font-bold shadow-lg transition-all border-2 ${quizState.lifelinesUsed.timeFreeze || config.timerSeconds === 0 ? 'bg-slate-800 border-slate-700 text-slate-600 opacity-50 cursor-not-allowed' : isTimeFrozen ? 'bg-cyan-500 border-cyan-200 text-white animate-pulse' : 'bg-cyan-700 border-cyan-500 text-white hover:scale-105 hover:bg-cyan-600 hover:shadow-cyan-500/50'}`}>
-                         <Snowflake size={18} /> {isTimeFrozen ? 'Frozen!' : 'Freeze'}
-                     </button>
+            {/* Overlay Next Button (Only when answered) */}
+            {hasAnswered && (
+                <div className="absolute bottom-4 right-4 z-50 animate-fade-in">
+                    <Button onClick={handleNext} className="h-14 px-8 shadow-2xl shadow-blue-500/50 text-lg border-2 border-white/20">
+                        {quizState.currentQuestionIndex === config.questions.length - 1 ? 'Finish' : 'Next'} <ArrowRight className="ml-2" />
+                    </Button>
                 </div>
             )}
         </div>
-      </div>
 
-      <div className={`fixed bottom-0 left-0 right-0 p-4 bg-[#020617]/95 backdrop-blur-lg border-t border-blue-900/30 md:static md:bg-transparent md:border-0 md:p-0 flex justify-end z-50 md:mt-8 max-w-4xl mx-auto transition-transform duration-300 ${hasAnswered ? 'translate-y-0' : 'translate-y-full md:translate-y-0'}`}>
-            <Button onClick={handleNext} disabled={!hasAnswered} variant={hasAnswered ? 'primary' : 'secondary'} className={`w-full md:w-auto px-10 h-16 text-xl shadow-xl ${hasAnswered ? 'shadow-blue-500/30' : 'md:opacity-0 md:pointer-events-none'}`}>
-                {quizState.currentQuestionIndex === config.questions.length - 1 ? 'See Results' : 'Next Question'} <ArrowRight className="ml-2" size={24} />
-            </Button>
+        {/* Bottom Actions - Power-ups (Only if not answered) */}
+        {!hasAnswered && config.lifelinesEnabled && (
+            <div className="flex-shrink-0 p-3 bg-slate-900/80 border-t border-slate-800 flex justify-center gap-4">
+                 <button onClick={handleUse5050} disabled={quizState.lifelinesUsed.fiftyFifty} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all border ${quizState.lifelinesUsed.fiftyFifty ? 'bg-slate-800 border-slate-700 text-slate-600 opacity-50' : 'bg-indigo-600/20 border-indigo-500 text-indigo-300 hover:bg-indigo-600 hover:text-white'}`}>
+                     <Zap size={18} className={quizState.lifelinesUsed.fiftyFifty ? '' : 'fill-yellow-400 text-yellow-400'} /> 50:50
+                 </button>
+                 <button onClick={handleUseTimeFreeze} disabled={quizState.lifelinesUsed.timeFreeze || config.timerSeconds === 0} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all border ${quizState.lifelinesUsed.timeFreeze || config.timerSeconds === 0 ? 'bg-slate-800 border-slate-700 text-slate-600 opacity-50' : isTimeFrozen ? 'bg-cyan-500 border-cyan-200 text-white' : 'bg-cyan-600/20 border-cyan-500 text-cyan-300 hover:bg-cyan-600 hover:text-white'}`}>
+                     <Snowflake size={18} /> {isTimeFrozen ? 'Frozen' : 'Freeze'}
+                 </button>
+            </div>
+        )}
       </div>
-      </>
     );
   };
 
@@ -823,10 +814,6 @@ function App() {
     const shareText = `I scored ${percentage}% on the ${subjectName} quiz in QuizzyVibes! Can you beat me?`;
     const shareUrl = window.location.href; 
     
-    const socialLinks = [
-        { name: 'Copy', icon: LinkIcon, color: 'bg-slate-600', action: () => { navigator.clipboard.writeText(`${shareText} ${shareUrl}`); alert("Result copied!"); } }
-    ];
-
     return (
       <>
       {percentage === 100 && <Confetti />}
@@ -871,7 +858,8 @@ function App() {
             <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={20} /> Review Answers</Button>
             <div className="flex gap-4 w-full">
                 <Button onClick={resetQuiz} variant="secondary" className="flex-1 h-14"><RefreshCw className="mr-2" size={18} /> Play Again</Button>
-                <Button onClick={() => setView('leaderboard')} variant="outline" className="flex-1 h-14"><Trophy className="mr-2" size={18} /> Rank</Button>
+                {/* RANK BUTTON */}
+                <Button onClick={() => setView('leaderboard')} variant="outline" className="flex-1 h-14 bg-slate-800/50 border-slate-600 text-yellow-400 font-bold"><Trophy className="mr-2" size={18} /> Rank</Button>
             </div>
         </div>
       </div>
@@ -938,14 +926,17 @@ function App() {
     <div className="min-h-screen bg-[#020617] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] font-sans selection:bg-blue-500/30">
         <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-blue-950/20 via-transparent to-transparent"></div>
         
-        <Navbar 
-          user={currentUser} 
-          onLogout={handleLogout} 
-          currentView={view} 
-          onChangeView={(v) => { setError(null); setView(v); }} 
-        />
+        {/* Navbar - hidden only during active quiz gameplay to prevent distraction, but shown otherwise */}
+        {view !== 'quiz' && (
+            <Navbar 
+              user={currentUser} 
+              onLogout={handleLogout} 
+              currentView={view} 
+              onChangeView={(v) => { setError(null); setView(v); }} 
+            />
+        )}
         
-        <main className="relative z-10 container mx-auto px-4 py-6 min-h-screen flex flex-col">
+        <main className={`relative z-10 container mx-auto flex flex-col ${view === 'quiz' ? '' : 'min-h-screen'}`}>
             {view === 'welcome' && renderWelcome()}
             {view === 'quiz' && renderQuiz()}
             {view === 'result' && renderResult()}
@@ -965,6 +956,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
