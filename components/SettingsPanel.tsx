@@ -167,16 +167,21 @@ function App() {
         bgMusicRef.current = new Audio(DEFAULT_BG_MUSIC);
         bgMusicRef.current.loop = true;
         bgMusicRef.current.volume = 0.5;
+        // Important for mobile to attempt to load metadata
+        bgMusicRef.current.preload = 'auto';
+        bgMusicRef.current.crossOrigin = 'anonymous'; 
     }
     const targetSrc = customAudio.music || DEFAULT_BG_MUSIC;
     // Check strict inequality to prevent reloading same src
     if (bgMusicRef.current.src !== targetSrc && bgMusicRef.current.src !== window.location.origin + "/" + targetSrc) {
         bgMusicRef.current.src = targetSrc;
+        bgMusicRef.current.load(); // Reload if source changes
     }
 
     // Tick
     if (customAudio.tick) {
         customTickRef.current = new Audio(customAudio.tick);
+        customTickRef.current.preload = 'auto';
     } else {
         customTickRef.current = null;
     }
@@ -184,6 +189,7 @@ function App() {
     // Finish
     if (customAudio.finish) {
         customFinishRef.current = new Audio(customAudio.finish);
+        customFinishRef.current.preload = 'auto';
     } else {
         customFinishRef.current = null;
     }
@@ -195,7 +201,10 @@ function App() {
     if (!bgMusic) return;
 
     if (musicEnabled && view === 'quiz') {
-       bgMusic.play().catch(e => console.log("Audio play prevented:", e));
+       const p = bgMusic.play();
+       if (p !== undefined) {
+           p.catch(e => console.log("Audio play prevented (background):", e));
+       }
     } else {
        bgMusic.pause();
     }
@@ -226,7 +235,8 @@ function App() {
     if (!soundEnabled) return;
     if (customTickRef.current) {
         customTickRef.current.currentTime = 0;
-        customTickRef.current.play().catch(e => console.warn("Tick play error", e));
+        const p = customTickRef.current.play();
+        if (p !== undefined) p.catch(e => console.warn("Tick play error", e));
     }
   }, [soundEnabled]);
 
@@ -234,7 +244,8 @@ function App() {
     if (!soundEnabled) return;
     if (customFinishRef.current) {
         customFinishRef.current.currentTime = 0;
-        customFinishRef.current.play().catch(console.warn);
+        const p = customFinishRef.current.play();
+        if (p !== undefined) p.catch(console.warn);
     }
   }, [soundEnabled]);
 
@@ -250,7 +261,7 @@ function App() {
       setHasCustomSubjects(hasSubjects);
 
       if (!hasSubjects) {
-          setConfig(prev => ({ ...prev, questionCount: Math.min(questions.length, 50) }));
+          setConfig((prev: QuizConfig) => ({ ...prev, questionCount: Math.min(questions.length, 50) }));
       }
 
       if (isAdmin) {
@@ -268,7 +279,7 @@ function App() {
     setCustomQuestions(null);
     setCustomFileName(null);
     setHasCustomSubjects(false);
-    setConfig(prev => ({ ...prev, questionCount: DEFAULT_QUESTION_COUNT }));
+    setConfig((prev: QuizConfig) => ({ ...prev, questionCount: DEFAULT_QUESTION_COUNT }));
   };
 
   const [config, setConfig] = useState<QuizConfig>({
@@ -296,7 +307,7 @@ function App() {
   const resetQuiz = () => {
     setView('welcome');
     // Ensure Count goes back to DEFAULT (10) explicitly
-    setConfig(prev => ({ ...prev, subject: '', questionCount: 10 })); 
+    setConfig((prev: QuizConfig) => ({ ...prev, subject: '', questionCount: 10 })); 
     setQuizState({
       currentQuestionIndex: 0,
       score: 0,
@@ -333,7 +344,7 @@ function App() {
   };
 
   const handleSubjectSelect = (subjectId: string) => {
-    setConfig(prev => ({ ...prev, subject: subjectId }));
+    setConfig((prev: QuizConfig) => ({ ...prev, subject: subjectId }));
     setError(null);
     setTimeout(() => {
       if (settingsRef.current) {
@@ -381,23 +392,6 @@ function App() {
        handleAnswer('TIMEOUT');
     }
   }, [quizState.timeRemaining, quizState.answers, quizState.currentQuestionIndex, view, config.timerSeconds]);
-
-  // HELPER: Unlock Audio for Mobile Browsers
-  // Mobile browsers require audio to be played inside a user interaction (click/touch)
-  // before it can be played programmatically later (e.g., in a timer).
-  const unlockAudio = (audio: HTMLAudioElement) => {
-      // We play it for a promise, then pause and reset. This "whitelists" the element.
-      const originalVolume = audio.volume;
-      audio.volume = 0; // Mute so user doesn't hear the unlock glitch
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-          playPromise.then(() => {
-              audio.pause();
-              audio.currentTime = 0;
-              audio.volume = originalVolume; // Restore volume
-          }).catch(e => console.warn("Audio unlock failed (likely already unlocked or blocked)", e));
-      }
-  };
 
   const handleStartQuiz = () => {
     setError(null);
@@ -449,17 +443,31 @@ function App() {
        return;
     }
 
-    setConfig(prev => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
+    setConfig((prev: QuizConfig) => ({ ...prev, questions: selectedQuestions, questionCount: selectedQuestions.length }));
     
-    // MOBILE AUDIO FIX: Explicitly play/unlock audio during this click event
+    // MOBILE AUDIO FIX: Explicit play on interaction
     if (musicEnabled && bgMusicRef.current) {
-      bgMusicRef.current.currentTime = 0;
-      bgMusicRef.current.play().catch(console.warn);
+        bgMusicRef.current.currentTime = 0;
+        const p = bgMusicRef.current.play();
+        if (p !== undefined) {
+            p.catch(e => console.warn("Music play blocked", e));
+        }
     }
     
     if (soundEnabled) {
-        if (customTickRef.current) unlockAudio(customTickRef.current);
-        if (customFinishRef.current) unlockAudio(customFinishRef.current);
+        // Unlock strategy: Play and immediately pause to warm up the element
+        const unlock = (audio: HTMLAudioElement) => {
+            const p = audio.play();
+            if (p !== undefined) {
+                p.then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(e => console.warn("SFX Unlock blocked", e));
+            }
+        };
+
+        if (customTickRef.current) unlock(customTickRef.current);
+        if (customFinishRef.current) unlock(customFinishRef.current);
     }
 
     setView('quiz');
@@ -703,17 +711,17 @@ function App() {
               <SettingsPanel 
                   user={currentUser}
                   count={config.questionCount}
-                  setCount={(val) => setConfig(prev => ({...prev, questionCount: val}))}
+                  setCount={(val: number) => setConfig((prev: QuizConfig) => ({...prev, questionCount: val}))}
                   timer={config.timerSeconds}
-                  setTimer={(val) => setConfig(prev => ({...prev, timerSeconds: val}))}
+                  setTimer={(val: number) => setConfig((prev: QuizConfig) => ({...prev, timerSeconds: val}))}
                   difficulty={config.difficulty}
-                  setDifficulty={(val) => setConfig(prev => ({...prev, difficulty: val}))}
+                  setDifficulty={(val: Difficulty) => setConfig((prev: QuizConfig) => ({...prev, difficulty: val}))}
                   musicEnabled={musicEnabled}
                   setMusicEnabled={setMusicEnabled}
                   soundEnabled={soundEnabled}
                   setSoundEnabled={setSoundEnabled}
                   lifelinesEnabled={config.lifelinesEnabled}
-                  setLifelinesEnabled={(val) => setConfig(prev => ({...prev, lifelinesEnabled: val}))}
+                  setLifelinesEnabled={(val: boolean) => setConfig((prev: QuizConfig) => ({...prev, lifelinesEnabled: val}))}
                   onUploadAudio={handleUploadAudio}
                   onRemoveAudio={handleRemoveAudio}
                   customAudioNames={customAudioNames}
@@ -1044,6 +1052,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
