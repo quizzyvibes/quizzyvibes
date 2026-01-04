@@ -23,18 +23,16 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
         {/* Dedicated Framed Question Box */}
         {/* 
            UPDATES: 
-           1. min-h-[220px] for mobile (was 100px) to fit long questions.
+           1. min-h-[140px] for mobile (Adjusted from 220px based on feedback).
            2. md:min-h-[110px] keeps PC/Tablet compact.
-           3. Text increased to text-2xl on mobile.
         */}
-        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[220px] md:min-h-[110px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
-            <h2 className="text-2xl md:text-2xl lg:text-3xl font-display font-bold text-white leading-snug text-center">
+        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[110px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
 
         {/* Options Grid */}
-        {/* Kept centralized options logic */}
         <div className="flex-1 grid grid-cols-1 gap-3 relative z-10 min-h-0 overflow-y-auto pr-1 pb-1 content-center w-full md:max-w-2xl md:mx-auto">
           {question.options.map((option, idx) => {
             const isHidden = hiddenOptions.includes(option);
@@ -77,7 +75,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 }`}>
                   {String.fromCharCode(65 + idx)}
                 </div>
-                {/* Responsive font size for options - INCREASED for all versions */}
+                {/* Responsive font size for options */}
                 <span className="text-lg md:text-xl font-semibold leading-tight pr-2">{option}</span>
                 {icon}
               </button>
@@ -90,6 +88,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
