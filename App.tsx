@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Brain, ArrowRight, RefreshCw, Trophy, XCircle, Sparkles,
@@ -174,8 +173,15 @@ function App() {
     
     if (view === 'quiz' && musicEnabled) {
         // Attempt to play if not playing
+        // Check if paused prevents conflicts with the click handler
         if (musicRef.current.paused) {
-            musicRef.current.play().catch(e => console.log("Autoplay waiting for interaction"));
+            const playPromise = musicRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    // Swallow autoplay errors in useEffect
+                    console.log("Autoplay waiting for interaction");
+                });
+            }
         }
     } else {
         // Stop music if not in quiz or disabled
@@ -221,11 +227,13 @@ function App() {
   const handleTestAudio = () => {
       // Manual trigger for testing
       if (musicRef.current) {
+          musicRef.current.load(); // Ensure buffer is ready
           musicRef.current.currentTime = 0;
           musicRef.current.play().catch(e => alert("Play error: " + e));
           setTimeout(() => musicRef.current?.pause(), 2000);
       }
       if (tickRef.current) {
+          tickRef.current.load();
           tickRef.current.currentTime = 0;
           tickRef.current.play().catch(() => {});
       }
@@ -375,18 +383,29 @@ function App() {
         return;
     }
 
-    // --- FORCE PLAY MUSIC ---
-    // This is inside a user click handler, so it should bypass browser blocks
+    // --- FIX FOR MOBILE AUDIO ---
+    // We execute this immediately inside the click handler
     if (musicRef.current && musicEnabled) {
-        musicRef.current.volume = 0.5; // Reasonable volume
+        // 1. Force load the buffer (crucial for iOS)
+        musicRef.current.load();
+        
+        // 2. Set properties
+        musicRef.current.volume = 0.5;
         musicRef.current.currentTime = 0;
-        musicRef.current.play().catch(e => console.error("Music blocked:", e));
+        
+        // 3. Play and catch errors (prevents crash if browser blocks it)
+        const playPromise = musicRef.current.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.error("Mobile Audio Autoplay blocked:", error);
+            });
+        }
     }
     
-    // Warm up SFX
+    // Warm up SFX (Initialize them so they are ready for later)
     if (soundEnabled) {
-        if(tickRef.current) { tickRef.current.muted = true; tickRef.current.play().then(() => { tickRef.current!.pause(); tickRef.current!.muted = false; }).catch(()=>{}); }
-        if(finishRef.current) { finishRef.current.muted = true; finishRef.current.play().then(() => { finishRef.current!.pause(); finishRef.current!.muted = false; }).catch(()=>{}); }
+        if(tickRef.current) { tickRef.current.load(); tickRef.current.muted = true; tickRef.current.play().then(() => { tickRef.current!.pause(); tickRef.current!.muted = false; }).catch(()=>{}); }
+        if(finishRef.current) { finishRef.current.load(); finishRef.current.muted = true; finishRef.current.play().then(() => { finishRef.current!.pause(); finishRef.current!.muted = false; }).catch(()=>{}); }
     }
 
     let selectedQuestions: Question[] = [];
@@ -977,9 +996,25 @@ function App() {
         <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-blue-950/20 via-transparent to-transparent"></div>
         
         {/* Hidden Audio Elements for Robust Playback */}
-        <audio ref={musicRef} src={customAudio.music || DEFAULT_BG_MUSIC} loop preload="auto" />
-        <audio ref={tickRef} src={customAudio.tick || DEFAULT_TICK_SOUND} preload="auto" />
-        <audio ref={finishRef} src={customAudio.finish || DEFAULT_FINISH_SOUND} preload="auto" />
+        <audio 
+            ref={musicRef} 
+            src={customAudio.music || DEFAULT_BG_MUSIC} 
+            loop 
+            preload="auto" 
+            playsInline 
+        />
+        <audio 
+            ref={tickRef} 
+            src={customAudio.tick || DEFAULT_TICK_SOUND} 
+            preload="auto" 
+            playsInline 
+        />
+        <audio 
+            ref={finishRef} 
+            src={customAudio.finish || DEFAULT_FINISH_SOUND} 
+            preload="auto" 
+            playsInline 
+        />
 
         {view !== 'quiz' && (
             <Navbar 
