@@ -111,13 +111,18 @@ function App() {
   const [showExplanation, setShowExplanation] = useState(false);
 
   // --- AUDIO SYSTEM (Native JS Objects) ---
-  // We use refs to hold pure JS Audio objects. This detaches them from the React Render Cycle.
-  // This is crucial for mobile, so re-renders don't kill the playback instance.
   const audioSystem = useRef<{
     music: HTMLAudioElement;
     tick: HTMLAudioElement;
     finish: HTMLAudioElement;
   } | null>(null);
+
+  // Track the actual string URLs we have loaded to avoid the browser's .src property normalization issues
+  const currentSources = useRef<{ music: string; tick: string; finish: string }>({
+    music: '',
+    tick: '',
+    finish: ''
+  });
 
   // Initialize Audio Objects ONCE
   useEffect(() => {
@@ -136,6 +141,13 @@ function App() {
 
         audioSystem.current = { music, tick, finish };
         
+        // Initial Source State
+        currentSources.current = {
+            music: DEFAULT_BG_MUSIC,
+            tick: DEFAULT_TICK_SOUND,
+            finish: DEFAULT_FINISH_SOUND
+        };
+
         // Config
         audioSystem.current.music.loop = true;
         audioSystem.current.music.preload = 'auto';
@@ -154,30 +166,34 @@ function App() {
   }, []);
 
   // Sync sources if custom audio changes
-  // FIXED: Explicitly handle both setting Custom and reverting to Default
+  // FIXED: We now compare against currentSources ref, not the DOM element's src property
   useEffect(() => {
      if (!audioSystem.current) return;
      const sys = audioSystem.current;
 
      // 1. Music
      const targetMusic = customAudio.music || DEFAULT_BG_MUSIC;
-     if (sys.music.src !== targetMusic) {
+     if (currentSources.current.music !== targetMusic) {
          sys.music.src = targetMusic;
          sys.music.load();
+         currentSources.current.music = targetMusic;
+         console.log("Music source updated:", targetMusic);
      }
 
      // 2. Tick
      const targetTick = customAudio.tick || DEFAULT_TICK_SOUND;
-     if (sys.tick.src !== targetTick) {
+     if (currentSources.current.tick !== targetTick) {
          sys.tick.src = targetTick;
          sys.tick.load();
+         currentSources.current.tick = targetTick;
      }
 
      // 3. Finish
      const targetFinish = customAudio.finish || DEFAULT_FINISH_SOUND;
-     if (sys.finish.src !== targetFinish) {
+     if (currentSources.current.finish !== targetFinish) {
          sys.finish.src = targetFinish;
          sys.finish.load();
+         currentSources.current.finish = targetFinish;
      }
 
   }, [customAudio]);
@@ -291,8 +307,8 @@ function App() {
       
       const { tick, music } = audioSystem.current;
 
-      // Force reload only if not playing to avoid glitching
-      if (tick.paused) tick.load();
+      // Force load to ensure the element isn't stuck in a completed state
+      tick.load();
       
       // Play tick
       tick.currentTime = 0;
@@ -300,8 +316,8 @@ function App() {
           setTimeout(() => {
             // Play a snippet of music
              if (audioSystem.current) {
-                 // Ensure source is ready
-                 if (music.paused) music.load();
+                 // Always load to ensure we grab the latest source if it changed recently
+                 music.load();
                  music.volume = 1;
                  music.play().catch(e => alert("Music failed: " + e));
                  setTimeout(() => audioSystem.current?.music.pause(), 2000);
@@ -459,18 +475,15 @@ function App() {
   const handleStartQuiz = () => {
     setError(null);
 
-    // --- MOBILE AUDIO FIX: Synchronous Play using Ref Objects ---
-    // We execute play() immediately on the Audio objects stored in the ref.
-    // Since these objects are NOT in the DOM/JSX, they persist through the 'setView' re-render.
-    
     if (audioSystem.current) {
         const { music, tick, finish } = audioSystem.current;
 
-        // Force load to ensure they are ready and not in an error state
-        if (musicEnabled && music.paused) music.load();
+        // Force load ensures that if the src changed recently, it's ready to play.
+        // This is safe to call even if already loaded, but it resets playback position.
+        if (musicEnabled) music.load();
         if (soundEnabled) {
-             if (tick.paused) tick.load();
-             if (finish.paused) finish.load();
+             tick.load();
+             finish.load();
         }
 
         // 1. Start Music (if enabled)
@@ -481,8 +494,7 @@ function App() {
             if (p !== undefined) p.catch(e => console.error("Music play blocked", e));
         }
 
-        // 2. Warm up SFX (Play then immediate pause)
-        // This "unlocks" the audio context for these specific audio objects
+        // 2. Warm up SFX
         if (soundEnabled) {
             tick.muted = true;
             tick.play().then(() => {
@@ -1119,6 +1131,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
