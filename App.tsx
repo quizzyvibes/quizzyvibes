@@ -151,6 +151,7 @@ function App() {
 
         // Config
         audioSystem.current.music.loop = true;
+        // Important: Setting preloads
         audioSystem.current.music.preload = 'auto';
         audioSystem.current.tick.preload = 'auto';
         audioSystem.current.finish.preload = 'auto';
@@ -482,29 +483,35 @@ function App() {
         return;
     }
 
+    // AUDIO FORCE START LOGIC
+    // We do this logic explicitly inside the event handler (click) to bypass autoplay restrictions
     if (audioSystem.current) {
         const { music, tick, finish } = audioSystem.current;
         const intendedMusic = customAudio.music || DEFAULT_BG_MUSIC;
 
-        // Force check the src to be 100% sure the uploaded file is active
-        if (music.src !== intendedMusic) {
+        // Force src assignment if it somehow got desynced or empty
+        if (!music.src || music.src !== intendedMusic) {
             music.src = intendedMusic;
-            music.load();
         }
 
         // 1. Start Music (if enabled)
         if (musicEnabled) {
             music.volume = 1.0; 
             music.currentTime = 0;
+            // Always force load before play in a user-interaction callback to ensure readiness
+            music.load(); 
             const p = music.play();
-            if (p !== undefined) p.catch(e => console.error("Music play blocked", e));
+            if (p !== undefined) {
+               p.then(() => console.log("Music started"))
+                .catch(e => console.error("Music play blocked by browser:", e));
+            }
         }
 
         // 2. Warm up SFX
         if (soundEnabled) {
+            // Ticks
+            tick.volume = 1.0;
             tick.load();
-            finish.load();
-
             tick.muted = true;
             tick.play().then(() => {
                 tick.pause();
@@ -512,6 +519,9 @@ function App() {
                 tick.muted = false;
             }).catch(() => {});
 
+            // Finish
+            finish.volume = 1.0;
+            finish.load();
             finish.muted = true;
             finish.play().then(() => {
                 finish.pause();
@@ -1144,6 +1154,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
