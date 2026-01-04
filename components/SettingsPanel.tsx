@@ -82,7 +82,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <button
                     key={level}
                     onClick={() => setDifficulty(level)}
-                    className={`flex-1 py-5 px-3 rounded-2xl text-lg md:text-xl font-bold transition-all duration-300 border-2 shadow-sm ${
+                    className={`flex-1 py-3 px-3 rounded-xl text-base md:text-lg font-bold transition-all duration-300 border-2 shadow-sm ${
                         isActive 
                         ? activeClass
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -240,6 +240,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 };
 
 export default SettingsPanel;
+
 
 
 
