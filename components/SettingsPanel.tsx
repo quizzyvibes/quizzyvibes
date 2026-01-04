@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Difficulty, User } from '../types';
-import { Settings, Clock, BarChart3, ListOrdered, Music, Volume2, Upload, Lock, ShieldAlert, Trash2, Unlock, FileSpreadsheet, List, Zap, Check, CloudLightning } from 'lucide-react';
-import { SUBJECT_PRESETS, ADMIN_EMAIL } from '../constants';
+import { Settings, Clock, BarChart3, ListOrdered, Music, Volume2, Upload, Lock, ShieldAlert, Check, CloudLightning, Zap } from 'lucide-react';
+import { ADMIN_EMAIL } from '../constants';
 
 interface SettingsPanelProps {
   user: User | null;
@@ -37,7 +37,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   musicEnabled, setMusicEnabled, soundEnabled, setSoundEnabled,
   lifelinesEnabled, setLifelinesEnabled,
   onUploadAudio, onRemoveAudio, customAudioNames,
-  isConfigLocked, setIsConfigLocked, customFileName, onUploadQuestions, onRemoveQuestions,
+  isConfigLocked,
+  // Unused props in this view but kept for interface compatibility if needed elsewhere
+  setIsConfigLocked, customFileName, onUploadQuestions, onRemoveQuestions,
   activeSubjectIds, onToggleSubject
 }) => {
 
@@ -46,12 +48,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const handleFileChange = (type: 'music' | 'tick' | 'finish') => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onUploadAudio(type, e.target.files[0]);
-    }
-  };
-
-  const handleQuestionFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-        onUploadQuestions(e.target.files[0]);
     }
   };
 
@@ -69,17 +65,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       {/* Bigger Header */}
       <h3 className="text-3xl font-display font-bold text-white flex items-center gap-3 pb-3 border-b border-slate-800/50">
         <Settings className="text-blue-400" size={32} />
-        Game Settings
+        Game Config
       </h3>
       
       <div className={!isAdmin && isConfigLocked ? 'opacity-30 pointer-events-none filter grayscale' : ''}>
         
-        {/* Difficulty */}
+        {/* Difficulty - BIGGER BUTTONS */}
         <div className="mb-6">
             <label className="flex items-center gap-2 text-lg font-bold text-slate-200 mb-3">
                 <BarChart3 size={20} className="text-blue-400" /> Difficulty Level
             </label>
-            <div className="flex gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
+            <div className="flex gap-3 p-1">
             {[Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD].map((level) => {
                 const isActive = difficulty === level;
                 let activeClass = '';
@@ -91,10 +87,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <button
                     key={level}
                     onClick={() => setDifficulty(level)}
-                    className={`flex-1 py-3 px-1 rounded-xl text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap overflow-hidden text-ellipsis ${
+                    className={`flex-1 py-4 px-2 rounded-2xl text-base md:text-lg font-bold transition-all duration-300 border-2 ${
                         isActive 
                         ? activeClass
-                        : 'text-slate-400 hover:text-slate-200'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
                     }`}
                     >
                     {level}
@@ -152,7 +148,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </div>
         </div>
 
-        {/* Lifelines Toggle - Redesigned to match Audio */}
+        {/* Lifelines Toggle */}
         <div className="mb-6">
            <label className="text-lg font-bold text-slate-200 flex items-center gap-2 mb-3">
                <Zap size={20} className="text-blue-400" /> Power-ups
@@ -247,13 +243,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             )}
         </div>
       </div>
-      
-      {/* Admin Controls Omitted for brevity but assumed present */}
     </div>
   );
 };
 
 export default SettingsPanel;
+
 
 
 
