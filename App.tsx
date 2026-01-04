@@ -154,11 +154,32 @@ function App() {
   }, []);
 
   // Sync sources if custom audio changes
+  // FIXED: Explicitly handle both setting Custom and reverting to Default
   useEffect(() => {
      if (!audioSystem.current) return;
-     if (customAudio.music) audioSystem.current.music.src = customAudio.music;
-     if (customAudio.tick) audioSystem.current.tick.src = customAudio.tick;
-     if (customAudio.finish) audioSystem.current.finish.src = customAudio.finish;
+     const sys = audioSystem.current;
+
+     // 1. Music
+     const targetMusic = customAudio.music || DEFAULT_BG_MUSIC;
+     if (sys.music.src !== targetMusic) {
+         sys.music.src = targetMusic;
+         sys.music.load();
+     }
+
+     // 2. Tick
+     const targetTick = customAudio.tick || DEFAULT_TICK_SOUND;
+     if (sys.tick.src !== targetTick) {
+         sys.tick.src = targetTick;
+         sys.tick.load();
+     }
+
+     // 3. Finish
+     const targetFinish = customAudio.finish || DEFAULT_FINISH_SOUND;
+     if (sys.finish.src !== targetFinish) {
+         sys.finish.src = targetFinish;
+         sys.finish.load();
+     }
+
   }, [customAudio]);
 
   const isAdmin = currentUser?.email && currentUser.email.toLowerCase().trim() === ADMIN_EMAIL;
@@ -270,8 +291,8 @@ function App() {
       
       const { tick, music } = audioSystem.current;
 
-      // Force reload to clear any previous errors
-      tick.load();
+      // Force reload only if not playing to avoid glitching
+      if (tick.paused) tick.load();
       
       // Play tick
       tick.currentTime = 0;
@@ -279,7 +300,8 @@ function App() {
           setTimeout(() => {
             // Play a snippet of music
              if (audioSystem.current) {
-                 music.load();
+                 // Ensure source is ready
+                 if (music.paused) music.load();
                  music.volume = 1;
                  music.play().catch(e => alert("Music failed: " + e));
                  setTimeout(() => audioSystem.current?.music.pause(), 2000);
@@ -445,10 +467,10 @@ function App() {
         const { music, tick, finish } = audioSystem.current;
 
         // Force load to ensure they are ready and not in an error state
-        if (musicEnabled) music.load();
+        if (musicEnabled && music.paused) music.load();
         if (soundEnabled) {
-            tick.load();
-            finish.load();
+             if (tick.paused) tick.load();
+             if (finish.paused) finish.load();
         }
 
         // 1. Start Music (if enabled)
@@ -1097,6 +1119,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
