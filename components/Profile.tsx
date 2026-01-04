@@ -1,8 +1,8 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { User } from '../types';
-import { getUserResults, updateUserProfile } from '../services/storageService';
-import { BADGES } from '../constants';
+import { User, QuizResult } from '../types';
+import { getUserResultsFromCloud, updateUserAvatar } from '../services/firebase';
+import { BADGES, ADMIN_EMAIL } from '../constants';
 import * as Icons from 'lucide-react';
 import { format } from 'date-fns';
 import Button from './Button';
@@ -13,24 +13,32 @@ interface ProfileProps {
   onViewAdmin?: () => void;
 }
 
-const ADMIN_EMAIL = 'admin@quizzyvibes.com';
-
 const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) => {
   const [currentUser, setCurrentUser] = useState<User>(user);
+  const [results, setResults] = useState<QuizResult[]>([]);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Sync local state if parent user prop changes
   useEffect(() => {
     setCurrentUser(user);
+    const fetchResults = async () => {
+        try {
+            const data = await getUserResultsFromCloud(user.email);
+            setResults(data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchResults();
   }, [user]);
 
-  const results = getUserResults(currentUser.email);
   const totalQuizzes = results.length;
   const totalScore = results.reduce((acc, r) => acc + r.score, 0);
   const totalQuestions = results.reduce((acc, r) => acc + r.totalQuestions, 0);
   const averageScore = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
   
-  // Calculate best subject
   const subjectScores: Record<string, number> = {};
   results.forEach(r => {
     subjectScores[r.subject] = (subjectScores[r.subject] || 0) + r.score;
@@ -38,43 +46,39 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
   const bestSubject = Object.entries(subjectScores).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
 
   const joinedDate = currentUser.joinedAt ? format(new Date(currentUser.joinedAt), 'PPP') : 'Unknown';
-  
   const isAdmin = currentUser.email?.toLowerCase().trim() === ADMIN_EMAIL;
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const base64String = reader.result as string;
         try {
+          // Update Cloud
+          await updateUserAvatar(base64String);
           const updated = { ...currentUser, avatar: base64String };
-          // 1. Save to Storage
-          updateUserProfile(updated);
-          // 2. Update Local State
           setCurrentUser(updated);
-          // 3. Update Parent State (App -> Navbar)
           onUpdateUser(updated); 
         } catch (err) {
           console.error("Failed to save avatar", err);
-          alert("Image too large to save locally. Please try a smaller image.");
+          alert("Image too large to save. Please try a smaller image.");
         }
       };
       reader.readAsDataURL(file);
     }
   };
 
+  if (loading) return <div className="p-20 text-center text-slate-400">Loading Profile...</div>;
+
   return (
     <div className="max-w-4xl mx-auto w-full space-y-8 animate-slide-up pt-40 pb-20">
       
-      {/* Header */}
       <div className="glass-panel p-8 rounded-3xl flex flex-col md:flex-row items-center gap-8 relative">
-        
-        {/* Redundant Admin Button (in case they miss the Navbar one) */}
         {isAdmin && onViewAdmin && (
             <div className="absolute top-4 right-4">
                  <Button onClick={onViewAdmin} variant="secondary" className="text-xs py-2 h-auto gap-2 bg-slate-800/80 border-slate-600">
@@ -96,21 +100,10 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
                 {currentUser.username.charAt(0).toUpperCase()}
               </div>
            )}
-           
-           {/* Camera Icon - FIXED Position & Visibility */}
-           {/* 'absolute -bottom-1 -right-1' places it at the corner.
-               We add a dark border matching the background to make it look like a cutout/overlay. */}
            <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-2.5 border-[4px] border-[#0f172a] text-white shadow-lg hover:bg-blue-500 transition-colors z-20">
               <Icons.Camera size={18} />
            </div>
-           
-           <input 
-             type="file" 
-             ref={fileInputRef} 
-             onChange={handleFileChange} 
-             accept="image/*" 
-             className="hidden" 
-           />
+           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
         </div>
 
         <div className="text-center md:text-left space-y-3 flex-1">
@@ -135,7 +128,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-panel p-6 rounded-2xl text-center hover:bg-slate-800/50 transition-colors">
            <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Quizzes</div>
@@ -155,7 +147,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
         </div>
       </div>
 
-      {/* Badges */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Icons.Medal className="text-yellow-500" /> Achievements
@@ -163,7 +154,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            {BADGES.map(badge => {
              const isUnlocked = currentUser.badges.includes(badge.id);
-             // Dynamic icon lookup
              // @ts-ignore
              const Icon = Icons[badge.icon] || Icons.Award;
 
@@ -189,7 +179,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="space-y-4">
          <h2 className="text-xl font-bold text-white">Recent Activity</h2>
          <div className="glass-panel rounded-2xl overflow-hidden">
@@ -208,7 +197,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
                       <td colSpan={3} className="p-8 text-center text-slate-500">No quizzes taken yet.</td>
                     </tr>
                   ) : (
-                    [...results].reverse().slice(0, 10).map(r => (
+                    [...results].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10).map(r => (
                       <tr key={r.id} className="hover:bg-slate-800/30 transition-colors">
                         <td className="p-4">
                            <div className="font-medium text-white">{r.subject}</div>
@@ -233,3 +222,4 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onViewAdmin }) =>
 };
 
 export default Profile;
+
