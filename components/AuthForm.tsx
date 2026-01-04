@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import Button from './Button';
-import { loginWithGoogle } from '../services/firebase';
+import { loginWithGoogle, loginAsGuest } from '../services/firebase';
 import { User } from '../types';
-import { LogIn, Globe } from 'lucide-react';
+import { Globe, User as UserIcon } from 'lucide-react';
 
 interface AuthFormProps {
   onLogin: (user: User) => void;
@@ -20,8 +19,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
       const user = await loginWithGoogle();
       onLogin(user);
     } catch (err: any) {
-      setError("Failed to sign in with Google. Please check your internet connection.");
+      // Friendly error message for configuration issues
+      setError("Unable to connect to Google. Please check if your Firebase API Key is configured in Vercel.");
       console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const user = await loginAsGuest();
+      onLogin(user);
+    } catch (err: any) {
+      setError("Guest login failed.");
     } finally {
       setIsLoading(false);
     }
@@ -41,9 +54,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm text-center">
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-xs text-center">
             {error}
           </div>
         )}
@@ -52,11 +65,27 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="G" />
            Sign in with Google
         </Button>
+
+        <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-slate-700"></div>
+            <span className="flex-shrink-0 mx-4 text-slate-500 text-xs">OR</span>
+            <div className="flex-grow border-t border-slate-700"></div>
+        </div>
+
+        <Button 
+            fullWidth 
+            onClick={handleGuestLogin} 
+            variant="secondary"
+            className="h-12 text-base flex items-center justify-center gap-2"
+        >
+            <UserIcon size={18} />
+            Continue as Guest
+        </Button>
       </div>
 
       <div className="mt-8 text-center border-t border-slate-700/50 pt-6">
         <p className="text-slate-500 text-xs">
-          By signing in, you agree to our Terms of Service.
+          Guest scores are stored temporarily. Sign in to save progress.
         </p>
       </div>
     </div>
