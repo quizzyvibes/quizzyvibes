@@ -22,7 +22,8 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 
         {/* Dedicated Framed Question Box */}
         <div className="flex-shrink-0 mb-4 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 md:p-6 min-h-[160px] flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
-            <h2 className="text-xl md:text-3xl font-display font-bold text-white leading-snug text-center">
+            {/* INCREASED FONT SIZE HERE */}
+            <h2 className="text-2xl md:text-4xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
@@ -83,5 +84,6 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
