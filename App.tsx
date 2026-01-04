@@ -31,12 +31,13 @@ const ICON_MAP: Record<string, React.ElementType> = {
 const CATEGORY_STORAGE_KEY = 'quizmaster_active_categories';
 
 // Audio Assets - Switched to highly reliable Google Storage URLs (MP3)
-// These prevent "NotSupportedError" caused by hotlink protection on other sites
-const DEFAULT_BG_MUSIC = "https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"; 
+// Updated to a softer "Memories" piano track
+const DEFAULT_BG_MUSIC = "https://codeskulptor-demos.commondatastorage.googleapis.com/bensound/bensound-memories.mp3"; 
 const DEFAULT_TICK_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3"; 
 const DEFAULT_FINISH_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/orders/coins.mp3";
 
-const ITEMS_PER_PAGE = 4; 
+// Increased to 8 to show 2 rows on desktop (4 columns x 2 rows)
+const ITEMS_PER_PAGE = 8; 
 
 const Confetti = () => {
   return (
@@ -1131,6 +1132,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
