@@ -610,7 +610,7 @@ function App() {
                       <Icon size={24} className="md:w-7 md:h-7" />
                     </div>
                     <div>
-                      <h3 className={`font-bold text-base md:text-lg break-words ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
+                      <h3 className={`font-bold text-sm sm:text-base md:text-lg break-words hyphens-auto ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>{preset.name}</h3>
                       <p className={`text-xs md:text-sm mt-1 md:mt-2 line-clamp-2 ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>{preset.description}</p>
                     </div>
                   </button>
@@ -934,5 +934,6 @@ function App() {
 }
 
 export default App;
+
 
 
