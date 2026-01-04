@@ -179,7 +179,6 @@ function App() {
 
     // Update src if changed
     const targetSrc = customAudio.music || DEFAULT_BG_MUSIC;
-    // We only update if strict inequality to avoid reloading
     if (bgMusic.src !== targetSrc && bgMusic.src !== window.location.origin + "/" + targetSrc) {
        bgMusic.src = targetSrc;
     }
@@ -196,16 +195,17 @@ function App() {
     setCustomAudio(prev => ({ ...prev, [type]: url }));
     setCustomAudioNames(prev => ({ ...prev, [type]: file.name }));
 
-    // Immediately update refs for immediate playback availability
-    if (type === 'tick') {
-        customTickRef.current = new Audio(url);
-    } else if (type === 'finish') {
-        customFinishRef.current = new Audio(url);
-    } else if (type === 'music') {
+    // Force enable the relevant setting so the user hears it immediately
+    if (type === 'music') {
+        setMusicEnabled(true);
         if (bgMusicRef.current) {
             bgMusicRef.current.src = url;
-            if (musicEnabled) bgMusicRef.current.play().catch(console.warn);
+            if (view === 'quiz') bgMusicRef.current.play().catch(console.warn);
         }
+    } else {
+        setSoundEnabled(true);
+        if (type === 'tick') customTickRef.current = new Audio(url);
+        if (type === 'finish') customFinishRef.current = new Audio(url);
     }
   };
 
@@ -274,11 +274,10 @@ function App() {
     }
   }, [soundEnabled]);
 
-  // UPDATE: Default lifelinesEnabled to false
   const [config, setConfig] = useState<QuizConfig>({
     subject: '', 
     difficulty: DEFAULT_DIFFICULTY,
-    questionCount: DEFAULT_QUESTION_COUNT, // Ensure defaults to 10
+    questionCount: DEFAULT_QUESTION_COUNT, // Defaults to 10
     timerSeconds: DEFAULT_TIMER_SECONDS,
     questions: [],
     lifelinesEnabled: false 
@@ -299,7 +298,7 @@ function App() {
   // UPDATE: Reset functionality clears selection and scrolls up
   const resetQuiz = () => {
     setView('welcome');
-    setConfig(prev => ({ ...prev, subject: '' })); // Light off subject selection
+    setConfig(prev => ({ ...prev, subject: '', questionCount: DEFAULT_QUESTION_COUNT })); // Ensure 10 questions on reset
     setQuizState({
       currentQuestionIndex: 0,
       score: 0,
@@ -1025,6 +1024,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
