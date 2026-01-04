@@ -476,15 +476,20 @@ function App() {
   const handleStartQuiz = () => {
     setError(null);
 
+    // 3. Configuration Validation
+    if (!config.subject && !customQuestions) {
+        setError("Click Go To Top & Choose a Subject");
+        return;
+    }
+
     if (audioSystem.current) {
         const { music, tick, finish } = audioSystem.current;
+        const intendedMusic = customAudio.music || DEFAULT_BG_MUSIC;
 
-        // Force load ensures that if the src changed recently, it's ready to play.
-        // This is safe to call even if already loaded, but it resets playback position.
-        if (musicEnabled) music.load();
-        if (soundEnabled) {
-             tick.load();
-             finish.load();
+        // Force check the src to be 100% sure the uploaded file is active
+        if (music.src !== intendedMusic) {
+            music.src = intendedMusic;
+            music.load();
         }
 
         // 1. Start Music (if enabled)
@@ -497,6 +502,9 @@ function App() {
 
         // 2. Warm up SFX
         if (soundEnabled) {
+            tick.load();
+            finish.load();
+
             tick.muted = true;
             tick.play().then(() => {
                 tick.pause();
@@ -511,12 +519,6 @@ function App() {
                 finish.muted = false;
             }).catch(() => {});
         }
-    }
-
-    // 3. Configuration Validation
-    if (!config.subject && !customQuestions) {
-        setError("Click Go To Top & Choose a Subject");
-        return;
     }
 
     let selectedQuestions: Question[] = [];
@@ -1033,9 +1035,19 @@ function App() {
             <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-16 text-lg bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={24} /> Review Answers</Button>
             
             <div className="flex gap-4 w-full">
-                <Button onClick={resetQuiz} variant="secondary" className="flex-1 h-14"><RefreshCw className="mr-2" size={18} /> Play Again</Button>
-                <Button onClick={() => setView('leaderboard')} variant="outline" className="flex-1 h-14 bg-slate-800/50 border-slate-600 text-yellow-400 font-bold hover:bg-slate-800 hover:text-yellow-300">
-                    <Trophy className="mr-2" size={18} /> Rank
+                <Button 
+                  onClick={resetQuiz} 
+                  variant="secondary" 
+                  className="flex-1 h-20 text-xl font-bold border-2 rounded-2xl"
+                >
+                  <RefreshCw className="mr-3" size={28} /> Play Again
+                </Button>
+                
+                <Button 
+                  onClick={() => setView('leaderboard')} 
+                  className="flex-1 h-20 text-xl font-bold bg-slate-800 border-2 border-slate-600 text-yellow-400 hover:bg-slate-700 hover:border-yellow-500/50 shadow-lg rounded-2xl"
+                >
+                    <Trophy className="mr-3" size={28} /> Rank
                 </Button>
             </div>
         </div>
@@ -1132,6 +1144,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
