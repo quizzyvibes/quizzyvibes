@@ -2,6 +2,7 @@
 import React from 'react';
 import { LogOut, Trophy, User as UserIcon, Home, Zap, ShieldAlert } from 'lucide-react';
 import { User as UserType } from '../types';
+import { ADMIN_EMAIL } from '../constants';
 
 interface NavbarProps {
   user: UserType;
@@ -9,8 +10,6 @@ interface NavbarProps {
   currentView: string;
   onChangeView: (view: any) => void;
 }
-
-const ADMIN_EMAIL = 'admin@quizzyvibes.com';
 
 const Navbar: React.FC<NavbarProps> = ({ user, onLogout, currentView, onChangeView }) => {
   const isAdmin = user?.email?.toLowerCase().trim() === ADMIN_EMAIL;
@@ -112,3 +111,4 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout, currentView, onChangeVi
 };
 
 export default Navbar;
+
