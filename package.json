@@ -1,3 +1,4 @@
+
 {
   "name": "quizmaster-ai",
   "private": true,
@@ -10,6 +11,7 @@
   },
   "dependencies": {
     "@google/genai": "*",
+    "firebase": "^10.12.2",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
@@ -28,3 +30,4 @@
     "vite": "^5.3.1"
   }
 }
+
