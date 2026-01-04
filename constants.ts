@@ -1,6 +1,8 @@
 
 import { SubjectPreset, Difficulty, Badge } from './types';
 
+export const ADMIN_EMAIL = 'admin@quizzyvibes.com';
+
 export const SUBJECT_PRESETS: SubjectPreset[] = [
   // Original
   { id: 'geo', name: 'Geography', icon: 'Globe', description: 'Capitals, landscapes, and maps' },
