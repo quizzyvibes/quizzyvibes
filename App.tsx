@@ -689,13 +689,6 @@ function App() {
                   onToggleSubject={handleToggleSubject}
               />
 
-              {/* Added Test Audio Button for Debugging */}
-              <div className="flex justify-end mt-2">
-                 <button onClick={handleTestAudio} className="text-xs text-blue-400 hover:text-white flex items-center gap-1 underline decoration-dotted">
-                     <PlayCircle size={12} /> Test Audio
-                 </button>
-              </div>
-
               <div className="mt-6 pb-4">
                 <Button 
                   fullWidth 
@@ -803,7 +796,6 @@ function App() {
                     onSelectAnswer={handleAnswer}
                     showFeedback={hasAnswered}
                     hiddenOptions={hiddenOptions} 
-                    explanation={question.explanation}
                 />
             )}
         </div>
@@ -1011,34 +1003,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
