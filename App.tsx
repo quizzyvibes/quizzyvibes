@@ -30,8 +30,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 const CATEGORY_STORAGE_KEY = 'quizmaster_active_categories';
 
-// Audio Assets
-const DEFAULT_BG_MUSIC = "https://codeskulptor-demos.commondatastorage.googleapis.com/bensound/bensound-memories.mp3"; 
+// Audio Assets (Music Removed)
 const DEFAULT_TICK_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3"; 
 const DEFAULT_FINISH_SOUND = "https://codeskulptor-demos.commondatastorage.googleapis.com/orders/coins.mp3";
 
@@ -84,17 +83,14 @@ function App() {
 
   const settingsRef = useRef<HTMLDivElement>(null);
 
-  const [musicEnabled, setMusicEnabled] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   
   const [customAudio, setCustomAudio] = useState<{
-    music: string | null;
     tick: string | null;
     finish: string | null;
-  }>({ music: null, tick: null, finish: null });
+  }>({ tick: null, finish: null });
   
   const [customAudioNames, setCustomAudioNames] = useState<{
-    music?: string;
     tick?: string;
     finish?: string;
   }>({});
@@ -109,7 +105,6 @@ function App() {
   const [showExplanation, setShowExplanation] = useState(false);
 
   // --- HTML Audio Refs (Reliable) ---
-  const musicRef = useRef<HTMLAudioElement>(null);
   const tickRef = useRef<HTMLAudioElement>(null);
   const finishRef = useRef<HTMLAudioElement>(null);
 
@@ -168,37 +163,14 @@ function App() {
 
   // --- AUDIO LOGIC ---
 
-  // Control Music Play/Pause based on View & Setting
-  useEffect(() => {
-    if (!musicRef.current) return;
-    
-    if (view === 'quiz' && musicEnabled) {
-        // Attempt to play if not playing
-        if (musicRef.current.paused) {
-            musicRef.current.play().catch(e => console.log("Autoplay waiting for interaction"));
-        }
-    } else {
-        // Stop music if not in quiz or disabled
-        musicRef.current.pause();
-        if (view !== 'quiz') {
-            musicRef.current.currentTime = 0;
-        }
-    }
-  }, [view, musicEnabled]);
-
-  const handleUploadAudio = (type: 'music' | 'tick' | 'finish', file: File) => {
+  const handleUploadAudio = (type: 'tick' | 'finish', file: File) => {
     const url = URL.createObjectURL(file);
     setCustomAudio(prev => ({ ...prev, [type]: url }));
     setCustomAudioNames(prev => ({ ...prev, [type]: file.name }));
-
-    if (type === 'music') {
-        setMusicEnabled(true);
-    } else {
-        setSoundEnabled(true);
-    }
+    setSoundEnabled(true);
   };
 
-  const handleRemoveAudio = (type: 'music' | 'tick' | 'finish') => {
+  const handleRemoveAudio = (type: 'tick' | 'finish') => {
     if (customAudio[type]) {
         URL.revokeObjectURL(customAudio[type]!);
     }
@@ -217,19 +189,6 @@ function App() {
     finishRef.current.currentTime = 0;
     finishRef.current.play().catch(() => {});
   }, [soundEnabled]);
-
-  const handleTestAudio = () => {
-      // Manual trigger for testing
-      if (musicRef.current) {
-          musicRef.current.currentTime = 0;
-          musicRef.current.play().catch(e => alert("Play error: " + e));
-          setTimeout(() => musicRef.current?.pause(), 2000);
-      }
-      if (tickRef.current) {
-          tickRef.current.currentTime = 0;
-          tickRef.current.play().catch(() => {});
-      }
-  };
 
   // --- QUIZ LOGIC ---
 
@@ -375,14 +334,6 @@ function App() {
         return;
     }
 
-    // --- FORCE PLAY MUSIC ---
-    // This is inside a user click handler, so it should bypass browser blocks
-    if (musicRef.current && musicEnabled) {
-        musicRef.current.volume = 0.5; // Reasonable volume
-        musicRef.current.currentTime = 0;
-        musicRef.current.play().catch(e => console.error("Music blocked:", e));
-    }
-    
     // Warm up SFX
     if (soundEnabled) {
         if(tickRef.current) { tickRef.current.muted = true; tickRef.current.play().then(() => { tickRef.current!.pause(); tickRef.current!.muted = false; }).catch(()=>{}); }
@@ -671,8 +622,6 @@ function App() {
                   setTimer={(val: number) => setConfig((prev: QuizConfig) => ({...prev, timerSeconds: val}))}
                   difficulty={config.difficulty}
                   setDifficulty={(val: Difficulty) => setConfig((prev: QuizConfig) => ({...prev, difficulty: val}))}
-                  musicEnabled={musicEnabled}
-                  setMusicEnabled={setMusicEnabled}
                   soundEnabled={soundEnabled}
                   setSoundEnabled={setSoundEnabled}
                   lifelinesEnabled={config.lifelinesEnabled}
@@ -769,14 +718,16 @@ function App() {
                      </div>
 
                      {question.explanation && (
-                        <div className="bg-blue-900/10 border border-blue-500/20 p-6 rounded-2xl text-center max-w-2xl mx-auto mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
-                            <div className="flex items-center justify-center gap-2 mb-3 text-blue-300">
-                                <Info size={20} />
-                                <span className="font-bold uppercase text-sm">Why is this correct?</span>
+                        <div className="bg-slate-900/30 border border-blue-500/20 p-6 rounded-2xl text-left max-w-2xl mx-auto mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
+                            <div className="flex items-start gap-2 mb-3 text-blue-300">
+                                <Info size={24} className="flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-bold uppercase text-sm block mb-1">Why is this correct?</span>
+                                    <p className="text-lg md:text-xl text-blue-100 leading-relaxed">
+                                        {question.explanation}
+                                    </p>
+                                </div>
                             </div>
-                            <p className="text-lg md:text-xl text-blue-100 leading-relaxed">
-                                {question.explanation}
-                            </p>
                         </div>
                      )}
                      
@@ -970,7 +921,6 @@ function App() {
         <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-blue-950/20 via-transparent to-transparent"></div>
         
         {/* Hidden Audio Elements for Robust Playback */}
-        <audio ref={musicRef} src={customAudio.music || DEFAULT_BG_MUSIC} loop preload="auto" />
         <audio ref={tickRef} src={customAudio.tick || DEFAULT_TICK_SOUND} preload="auto" />
         <audio ref={finishRef} src={customAudio.finish || DEFAULT_FINISH_SOUND} preload="auto" />
 
@@ -1003,3 +953,4 @@ function App() {
 }
 
 export default App;
+
