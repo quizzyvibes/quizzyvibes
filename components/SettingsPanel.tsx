@@ -177,8 +177,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
                 <button 
+                type="button"
                 onClick={() => setMusicEnabled(!musicEnabled)}
-                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all select-none ${
                     musicEnabled 
                     ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
                     : 'bg-slate-900/50 border-slate-800 text-slate-500'
@@ -194,8 +195,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 </button>
 
                 <button 
+                type="button"
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all select-none ${
                     soundEnabled 
                     ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
                     : 'bg-slate-900/50 border-slate-800 text-slate-500'
@@ -240,6 +242,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 };
 
 export default SettingsPanel;
+
 
 
 
