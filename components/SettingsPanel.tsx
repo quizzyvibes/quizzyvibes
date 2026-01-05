@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Difficulty, User } from '../types';
-import { Settings, Clock, BarChart3, ListOrdered, Music, Volume2, Upload, Lock, Check, CloudLightning, Zap } from 'lucide-react';
+import { Settings, Clock, BarChart3, ListOrdered, Volume2, Upload, Lock, Check, CloudLightning, Zap } from 'lucide-react';
 import { ADMIN_EMAIL } from '../constants';
 
 interface SettingsPanelProps {
@@ -12,15 +12,13 @@ interface SettingsPanelProps {
   setTimer: (val: number) => void;
   difficulty: Difficulty;
   setDifficulty: (val: Difficulty) => void;
-  musicEnabled: boolean;
-  setMusicEnabled: (val: boolean) => void;
   soundEnabled: boolean;
   setSoundEnabled: (val: boolean) => void;
   lifelinesEnabled: boolean;
   setLifelinesEnabled: (val: boolean) => void;
-  onUploadAudio: (type: 'music' | 'tick' | 'finish', file: File) => void;
-  onRemoveAudio: (type: 'music' | 'tick' | 'finish') => void;
-  customAudioNames: { music?: string; tick?: string; finish?: string };
+  onUploadAudio: (type: 'tick' | 'finish', file: File) => void;
+  onRemoveAudio: (type: 'tick' | 'finish') => void;
+  customAudioNames: { tick?: string; finish?: string };
   isConfigLocked: boolean;
   setIsConfigLocked: (val: boolean) => void;
   customFileName: string | null;
@@ -33,7 +31,7 @@ interface SettingsPanelProps {
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
   user,
   count, setCount, timer, setTimer, difficulty, setDifficulty,
-  musicEnabled, setMusicEnabled, soundEnabled, setSoundEnabled,
+  soundEnabled, setSoundEnabled,
   lifelinesEnabled, setLifelinesEnabled,
   onUploadAudio, customAudioNames,
   isConfigLocked
@@ -41,7 +39,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const isAdmin = user?.email?.toLowerCase().trim() === ADMIN_EMAIL;
 
-  const handleFileChange = (type: 'music' | 'tick' | 'finish') => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (type: 'tick' | 'finish') => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onUploadAudio(type, e.target.files[0]);
     }
@@ -178,26 +176,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="grid grid-cols-2 gap-3">
                 <button 
                 type="button"
-                onClick={() => setMusicEnabled(!musicEnabled)}
-                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all select-none ${
-                    musicEnabled 
-                    ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
-                    : 'bg-slate-900/50 border-slate-800 text-slate-500'
-                }`}
-                >
-                <Music size={24} />
-                <span className="text-sm font-bold flex items-center gap-1">
-                    Music 
-                    <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${musicEnabled ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                        {musicEnabled ? 'ON' : 'OFF'}
-                    </span>
-                </span>
-                </button>
-
-                <button 
-                type="button"
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all select-none ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all select-none col-span-2 ${
                     soundEnabled 
                     ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
                     : 'bg-slate-900/50 border-slate-800 text-slate-500'
@@ -216,12 +196,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             {isAdmin && (
                 <div className="space-y-2 mt-4 p-3 bg-slate-900/50 rounded-xl border border-slate-800">
                     <p className="text-xs text-slate-400 font-bold uppercase mb-2 flex items-center gap-1"><Upload size={10} /> Custom Audio (Admin)</p>
-                    <div className="grid grid-cols-3 gap-2">
-                        <label className="flex flex-col items-center justify-center p-2 border border-slate-700 border-dashed rounded-lg hover:bg-slate-800 cursor-pointer text-center">
-                            <span className="text-[10px] text-slate-400 font-bold">Music</span>
-                             {customAudioNames.music ? <Check size={12} className="text-green-500"/> : <Upload size={12} className="text-slate-500"/>}
-                            <input type="file" accept="audio/*" onChange={handleFileChange('music')} className="hidden" />
-                        </label>
+                    <div className="grid grid-cols-2 gap-2">
                         <label className="flex flex-col items-center justify-center p-2 border border-slate-700 border-dashed rounded-lg hover:bg-slate-800 cursor-pointer text-center">
                             <span className="text-[10px] text-slate-400 font-bold">Tick</span>
                             {customAudioNames.tick ? <Check size={12} className="text-green-500"/> : <Upload size={12} className="text-slate-500"/>}
@@ -242,6 +217,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 };
 
 export default SettingsPanel;
+
 
 
 
