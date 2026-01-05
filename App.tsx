@@ -705,14 +705,14 @@ function App() {
             {showExplanation ? (
                 <div className="flex-1 flex flex-col animate-fade-in h-full overflow-y-auto custom-scrollbar">
                      <div className="flex-shrink-0 mb-6 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-6 min-h-[140px] flex items-center justify-center shadow-inner w-full md:max-w-3xl md:mx-auto">
-                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white leading-snug text-center opacity-70">
+                        <h2 className="text-base md:text-lg font-display font-bold text-white leading-snug text-center opacity-70">
                             {question.text}
                         </h2>
                      </div>
 
                      <div className="mb-6 text-center animate-slide-up">
-                         <div className="text-sm font-bold text-green-400 uppercase tracking-widest mb-2">Correct Answer</div>
-                         <div className="text-3xl md:text-5xl font-bold text-white drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">
+                         <div className="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-2">Correct Answer</div>
+                         <div className="text-lg md:text-2xl font-bold text-white drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">
                              {question.correctAnswer}
                          </div>
                      </div>
@@ -792,23 +792,6 @@ function App() {
     const subjectName = customQuestions && !hasCustomSubjects ? "Custom Quiz" : (SUBJECT_PRESETS.find(s => s.id === config.subject)?.name || config.subject);
     let message = percentage >= 80 ? "Outstanding!" : percentage >= 60 ? "Great Job!" : percentage >= 40 ? "Good Effort!" : "Keep trying!";
     
-    // Share Logic
-    const shareUrl = window.location.origin;
-    const shareText = `I scored ${percentage}% on the ${subjectName} challenge in QuizzyVibes! Can you beat me?`;
-    
-    const handleCopy = () => {
-        navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-        alert("Result copied to clipboard!");
-    };
-
-    const shareLinks = [
-        { icon: Twitter, color: 'bg-sky-500', href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
-        { icon: Facebook, color: 'bg-blue-600', href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
-        { icon: Linkedin, color: 'bg-blue-700', href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}` },
-        { icon: MessageCircle, color: 'bg-green-500', href: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}` },
-        { icon: Mail, color: 'bg-red-500', href: `mailto:?subject=My Quiz Score&body=${encodeURIComponent(shareText + ' ' + shareUrl)}` },
-    ];
-
     return (
       <>
       {percentage === 100 && <Confetti />}
@@ -816,7 +799,7 @@ function App() {
         
         <div className="relative inline-block">
             <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full"></div>
-            <Trophy className={`w-24 h-24 mx-auto ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} relative z-10 drop-shadow-2xl`} />
+            <Trophy className={`w-12 h-12 mx-auto ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} relative z-10 drop-shadow-2xl`} />
         </div>
 
         {earnedBadges.length > 0 && (
@@ -832,7 +815,6 @@ function App() {
 
         <div className="space-y-3">
             <h2 className="text-5xl md:text-6xl font-display font-bold text-white tracking-tight">{message}</h2>
-            <p className="text-slate-300 text-lg md:text-xl">You completed the <span className="text-blue-400 font-bold">{subjectName}</span> challenge.</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -851,30 +833,6 @@ function App() {
             <div className="glass-panel p-4 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Time</div>
                 <div className="text-lg font-bold text-cyan-400 pt-1">{config.timerSeconds === 0 ? 'OFF' : `${config.timerSeconds}s`}</div>
-            </div>
-        </div>
-        
-        {/* Share Section */}
-        <div className="glass-panel p-4 rounded-2xl border-t border-slate-700 mt-2">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Share Result</p>
-            <div className="flex justify-center gap-3">
-                {shareLinks.map((link, i) => (
-                    <a 
-                        key={i} 
-                        href={link.href} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className={`w-10 h-10 flex items-center justify-center rounded-full text-white shadow-lg hover:scale-110 transition-transform ${link.color}`}
-                    >
-                        <link.icon size={18} />
-                    </a>
-                ))}
-                <button 
-                    onClick={handleCopy} 
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white shadow-lg hover:scale-110 transition-transform"
-                >
-                    <LinkIcon size={18} />
-                </button>
             </div>
         </div>
 
@@ -994,6 +952,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
