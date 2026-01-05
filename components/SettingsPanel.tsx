@@ -56,15 +56,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       )}
 
-      <h3 className="text-3xl font-display font-bold text-white flex items-center gap-3 pb-3 border-b border-slate-800/50">
-        <Settings className="text-blue-400" size={32} />
+      <h3 className="text-2xl font-display font-bold text-white flex items-center gap-3 pb-3 border-b border-slate-800/50">
+        <Settings className="text-blue-400" size={28} />
         Game Config
       </h3>
       
       <div className={!isAdmin && isConfigLocked ? 'opacity-30 pointer-events-none filter grayscale' : ''}>
         
         {/* Difficulty */}
-        <div className="mb-6">
+        <div className="mb-8">
             <label className="flex items-center gap-2 text-lg font-bold text-slate-200 mb-3">
                 <BarChart3 size={20} className="text-blue-400" /> Difficulty Level
             </label>
@@ -94,7 +94,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
 
         {/* Question Count */}
-        <div className="mb-6">
+        <div className="mb-8">
             <label className="flex items-center gap-3 text-lg font-bold text-slate-200 mb-4">
             <span className="flex items-center gap-2">
                 <ListOrdered size={20} className="text-blue-400"/> 
@@ -120,7 +120,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
 
         {/* Timer */}
-        <div className="mb-6">
+        <div className="mb-8">
             <label className="flex justify-between items-center text-lg font-bold text-slate-200 mb-3">
             <span className="flex items-center gap-2"><Clock size={20} className="text-blue-400" /> Timer (sec)</span>
             </label>
@@ -142,7 +142,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
 
         {/* Lifelines */}
-        <div className="mb-6">
+        <div className="mb-8">
            <label className="text-lg font-bold text-slate-200 flex items-center gap-2 mb-3">
                <Zap size={20} className="text-blue-400" /> Power-ups
            </label>
@@ -217,6 +217,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 };
 
 export default SettingsPanel;
+
 
 
 
