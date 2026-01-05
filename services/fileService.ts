@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import { Question, Difficulty } from '../types';
 
@@ -15,26 +16,46 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
         // Convert to JSON
         const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
+        // Helper: Case-insensitive & trimmed key lookup
+        const getValue = (row: any, candidates: string[]): string | undefined => {
+             const rowKeys = Object.keys(row);
+             for (const candidate of candidates) {
+                 // 1. Exact match
+                 if (row[candidate] !== undefined && row[candidate] !== null) {
+                     return String(row[candidate]).trim();
+                 }
+                 
+                 // 2. Fuzzy match (case insensitive, trimmed)
+                 const foundKey = rowKeys.find(k => k.toLowerCase().trim() === candidate.toLowerCase());
+                 if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
+                     return String(row[foundKey]).trim();
+                 }
+             }
+             return undefined;
+        };
+
         // Map loosely to Question format
         const questions: Question[] = jsonData.map((row: any, index: number): Question | null => {
-            // Flexible column matching
-            const text = row['Question'] || row['question'] || row['Text'];
             
-            // Collect options
+            // 1. Text
+            const text = getValue(row, ['Question', 'question', 'Text', 'text', 'Q']);
+            
+            // 2. Options
             const options: string[] = [];
-            ['Option A', 'Option B', 'Option C', 'Option D', 'A', 'B', 'C', 'D'].forEach(key => {
-                if (row[key]) options.push(String(row[key]));
-            });
-            // Fallback for numbered options like option1, option2 etc
-             if (options.length === 0) {
-                 ['option1', 'option2', 'option3', 'option4'].forEach(key => {
-                     if (row[key]) options.push(String(row[key]));
-                 });
-             }
+            const optA = getValue(row, ['Option A', 'A', 'a', 'option1', 'Option 1']);
+            const optB = getValue(row, ['Option B', 'B', 'b', 'option2', 'Option 2']);
+            const optC = getValue(row, ['Option C', 'C', 'c', 'option3', 'Option 3']);
+            const optD = getValue(row, ['Option D', 'D', 'd', 'option4', 'Option 4']);
 
-            let correctAnswer = String(row['Correct Answer'] || row['Answer'] || row['correct'] || '');
+            if (optA) options.push(optA);
+            if (optB) options.push(optB);
+            if (optC) options.push(optC);
+            if (optD) options.push(optD);
+
+            // 3. Correct Answer
+            let correctAnswer = getValue(row, ['Correct Answer', 'Answer', 'correct', 'answer', 'Ans']) || '';
             
-            // If correct answer is a single letter 'A', map it to the option index
+            // Map single letter answers (A, B, C, D) to the actual text
             if (correctAnswer.length === 1 && /^[A-D]$/i.test(correctAnswer)) {
                 const map: {[key: string]: number} = {'A':0, 'B':1, 'C':2, 'D':3};
                 const idx = map[correctAnswer.toUpperCase()];
@@ -43,11 +64,11 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
                 }
             }
 
-            // --- New: Subject Parsing ---
-            let rawSubject = row['Subject'] || row['subject'] || row['Topic'] || '';
+            // 4. Subject Parsing
+            let rawSubject = getValue(row, ['Subject', 'subject', 'Topic', 'topic', 'Category']) || '';
             let subjectId = undefined;
             if (rawSubject) {
-                const s = rawSubject.toLowerCase().trim();
+                const s = rawSubject.toLowerCase();
                 if (s.includes('geo')) subjectId = 'geo';
                 else if (s.includes('sci')) subjectId = 'sci';
                 else if (s.includes('nut') || s.includes('food')) subjectId = 'nut';
@@ -56,27 +77,30 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
                 else if (s.includes('gen')) subjectId = 'gen';
             }
 
-            // --- New: Difficulty Parsing ---
-            let rawDiff = row['Difficulty'] || row['difficulty'] || row['Level'] || '';
+            // 5. Difficulty Parsing
+            let rawDiff = getValue(row, ['Difficulty', 'difficulty', 'Level', 'level']) || '';
             let difficulty = undefined;
             if (rawDiff) {
-                const d = String(rawDiff).toLowerCase().trim();
+                const d = rawDiff.toLowerCase();
                 if (d === 'easy' || d === '1') difficulty = Difficulty.EASY;
                 else if (d === 'medium' || d === 'med' || d === '2') difficulty = Difficulty.MEDIUM;
                 else if (d === 'hard' || d === '3') difficulty = Difficulty.HARD;
             }
+            
+            // 6. Explanation Parsing (Robust Check)
+            const explanation = getValue(row, ['Explanation', 'explanation', 'Explain', 'explain', 'Reason', 'reason', 'Note']);
 
+            // Validation
             if (!text || options.length < 2 || !correctAnswer) {
-                // Skip invalid rows gracefully
                 return null;
             }
 
             return {
                 id: `file-${index}`,
-                text: String(text),
+                text: text,
                 options,
                 correctAnswer,
-                explanation: row['Explanation'] || row['explanation'],
+                explanation: explanation,
                 subject: subjectId,
                 difficulty: difficulty
             };
