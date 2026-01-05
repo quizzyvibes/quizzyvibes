@@ -28,7 +28,7 @@ const Leaderboard: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto w-full space-y-8 animate-slide-up pt-40 pb-20">
       <div className="text-center space-y-4 mb-12">
-        <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] font-display font-bold text-white tracking-tight drop-shadow-2xl px-2">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[7.5rem] font-display font-bold text-white tracking-tight drop-shadow-2xl px-2">
           Leaderboard
         </h1>
         <p className="text-slate-300 text-lg md:text-xl font-medium">Top scores from around the world</p>
@@ -86,6 +86,7 @@ const Leaderboard: React.FC = () => {
 };
 
 export default Leaderboard;
+
 
 
 
