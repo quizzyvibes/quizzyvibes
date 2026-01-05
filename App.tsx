@@ -677,23 +677,23 @@ function App() {
     
     return (
       <div className="fixed inset-0 z-[60] bg-[#020617] flex flex-col h-[100dvh]">
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-slate-900/90 border-b border-slate-800 backdrop-blur-md">
-             <div className="w-10"></div> 
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-800 backdrop-blur-md">
+             <div className="w-8"></div> 
              
              <div className="flex flex-col items-center">
                  {config.timerSeconds > 0 && (
-                     <div className={`flex items-center gap-2 font-mono text-3xl font-bold leading-none mb-1 ${isTimeFrozen ? 'text-cyan-400' : quizState.timeRemaining <= 5 ? 'text-red-500' : 'text-blue-400'}`}>
-                         {isTimeFrozen ? <Snowflake size={24} /> : null}
+                     <div className={`flex items-center gap-2 font-mono text-2xl font-bold leading-none mb-1 ${isTimeFrozen ? 'text-cyan-400' : quizState.timeRemaining <= 5 ? 'text-red-500' : 'text-blue-400'}`}>
+                         {isTimeFrozen ? <Snowflake size={18} /> : null}
                          {quizState.timeRemaining}
                      </div>
                  )}
-                 <div className="text-slate-400 font-bold text-lg leading-none">
-                     Question {quizState.currentQuestionIndex + 1} <span className="text-slate-600 text-sm">/ {config.questions.length}</span>
+                 <div className="text-slate-400 font-bold text-sm leading-none">
+                     Question {quizState.currentQuestionIndex + 1} <span className="text-slate-600 text-xs">/ {config.questions.length}</span>
                  </div>
              </div>
 
-             <button onClick={resetQuiz} className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-full text-slate-400 hover:text-white hover:bg-red-500/20 transition-all">
-                 <XCircle size={24} />
+             <button onClick={resetQuiz} className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-full text-slate-400 hover:text-white hover:bg-red-500/20 transition-all">
+                 <XCircle size={20} />
              </button>
         </div>
 
@@ -704,7 +704,7 @@ function App() {
         <div className="flex-1 overflow-hidden p-4 flex flex-col relative bg-gradient-to-b from-[#020617] to-slate-950">
             {showExplanation ? (
                 <div className="flex-1 flex flex-col animate-fade-in h-full overflow-y-auto custom-scrollbar">
-                     <div className="flex-shrink-0 mb-6 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-6 min-h-[140px] flex items-center justify-center shadow-inner">
+                     <div className="flex-shrink-0 mb-6 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-6 min-h-[140px] flex items-center justify-center shadow-inner w-full md:max-w-3xl md:mx-auto">
                         <h2 className="text-2xl md:text-3xl font-display font-bold text-white leading-snug text-center opacity-70">
                             {question.text}
                         </h2>
@@ -953,4 +953,5 @@ function App() {
 }
 
 export default App;
+
 
