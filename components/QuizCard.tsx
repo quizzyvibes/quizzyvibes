@@ -19,13 +19,13 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
         
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[120px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
+        <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[120px] w-full md:max-w-3xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
             <h2 className="text-lg md:text-xl lg:text-2xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
 
-        <div className="flex-1 grid grid-cols-1 gap-3 relative z-10 min-h-0 overflow-y-auto pr-1 pb-1 content-center w-full md:max-w-2xl md:mx-auto">
+        <div className="flex-1 grid grid-cols-1 gap-2 relative z-10 min-h-0 overflow-y-auto pr-1 pb-1 content-center w-full md:max-w-xl md:mx-auto">
           {question.options.map((option, idx) => {
             const isHidden = hiddenOptions.includes(option);
             
@@ -57,7 +57,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 key={idx}
                 onClick={() => !showFeedback && onSelectAnswer(option)}
                 disabled={showFeedback}
-                className={`relative w-full py-4 pl-4 pr-12 md:pl-6 md:pr-16 rounded-xl text-left transition-all duration-200 flex items-center group ${buttonStyle} ${showFeedback ? 'cursor-default active:scale-100 hover:scale-100' : ''}`}
+                className={`relative w-full py-3 pl-4 pr-12 md:pl-6 md:pr-16 rounded-xl text-left transition-all duration-200 flex items-center group ${buttonStyle} ${showFeedback ? 'cursor-default active:scale-100 hover:scale-100' : ''}`}
               >
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold mr-4 border-2 transition-colors ${
                    showFeedback && option === question.correctAnswer ? 'border-green-400 bg-green-500/20 text-green-300' : 
@@ -83,6 +83,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
