@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Button from './Button';
 import { loginWithGoogle, loginAsGuest } from '../services/firebase';
 import { User } from '../types';
-import { Globe, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Zap, User as UserIcon, AlertCircle } from 'lucide-react';
 
 interface AuthFormProps {
   onLogin: (user: User) => void;
@@ -56,13 +56,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
     <div className="w-full max-w-md mx-auto p-8 glass-panel rounded-3xl animate-fade-in shadow-2xl relative border border-blue-500/20">
       <div className="text-center mb-8">
         <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-500/30 transform rotate-3">
-             <Globe className="text-white w-10 h-10" />
+             <Zap className="text-white fill-white w-10 h-10" />
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">
           QuizzyVibes
         </h1>
         <p className="text-slate-400">
-          Sign in to access global leaderboards, save your progress, and challenge friends.
+          Thousands of quizzes across 16 subjects! Test your knowledge and learn something new today
         </p>
       </div>
 
@@ -85,25 +85,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
             <div className="flex-grow border-t border-slate-700"></div>
         </div>
 
-        <Button 
-            fullWidth 
-            onClick={handleGuestLogin} 
-            variant="secondary"
-            className="h-12 text-base flex items-center justify-center gap-2"
-        >
-            <UserIcon size={18} />
-            Continue as Guest
-        </Button>
-      </div>
-
-      <div className="mt-8 text-center border-t border-slate-700/50 pt-6">
-        <p className="text-slate-500 text-xs">
-          Guest scores are stored temporarily. Sign in to save progress.
-        </p>
+        <div>
+            <Button 
+                fullWidth 
+                onClick={handleGuestLogin} 
+                variant="secondary"
+                className="h-12 text-base flex items-center justify-center gap-2 mb-2"
+            >
+                <UserIcon size={18} />
+                Continue as Guest
+            </Button>
+            <p className="text-slate-500 text-[10px] text-center">
+              Guest scores are stored temporarily. Sign in to save progress.
+            </p>
+        </div>
       </div>
     </div>
   );
 };
 
 export default AuthForm;
+
 
