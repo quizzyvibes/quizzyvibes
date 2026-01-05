@@ -330,7 +330,7 @@ function App() {
 
     // Validate
     if (!config.subject && !customQuestions) {
-        setError("Click Go To Top & Choose a Subject");
+        setError("Please select a Subject at the top");
         return;
     }
 
@@ -953,5 +953,6 @@ function App() {
 }
 
 export default App;
+
 
 
