@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Question } from '../types';
-import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface QuizCardProps {
   question: Question;
@@ -9,10 +9,9 @@ interface QuizCardProps {
   onSelectAnswer: (answer: string) => void;
   showFeedback?: boolean;
   hiddenOptions?: string[]; 
-  explanation?: string; // New prop to show explanation inline
 }
 
-const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectAnswer, showFeedback, hiddenOptions = [], explanation }) => {
+const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectAnswer, showFeedback, hiddenOptions = [] }) => {
 
   return (
     <div className="w-full flex-1 flex flex-col min-h-0">
@@ -78,26 +77,13 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
             );
           })}
         </div>
-
-        {/* INLINE EXPLANATION: Shown immediately if feedback is active */}
-        {showFeedback && explanation && (
-            <div className="mt-4 p-4 bg-indigo-900/40 border border-indigo-500/30 rounded-xl animate-slide-up">
-                <div className="flex items-start gap-3">
-                    <Info className="text-indigo-400 flex-shrink-0 mt-1" size={20} />
-                    <div>
-                        <span className="text-indigo-300 font-bold text-xs uppercase tracking-wider block mb-1">Explanation</span>
-                        <p className="text-indigo-100 text-sm md:text-base leading-relaxed">{explanation}</p>
-                    </div>
-                </div>
-            </div>
-        )}
-
       </div>
     </div>
   );
 };
 
 export default QuizCard;
+
 
 
 
