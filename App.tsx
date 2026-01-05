@@ -330,7 +330,7 @@ function App() {
 
     // Validate
     if (!config.subject && !customQuestions) {
-        setError("Please select a Subject at the top");
+        setError("Choose Your Subject at the top");
         return;
     }
 
@@ -792,6 +792,23 @@ function App() {
     const subjectName = customQuestions && !hasCustomSubjects ? "Custom Quiz" : (SUBJECT_PRESETS.find(s => s.id === config.subject)?.name || config.subject);
     let message = percentage >= 80 ? "Outstanding!" : percentage >= 60 ? "Great Job!" : percentage >= 40 ? "Good Effort!" : "Keep trying!";
     
+    // Share Logic
+    const shareUrl = window.location.origin;
+    const shareText = `I scored ${percentage}% on the ${subjectName} challenge in QuizzyVibes! Can you beat me?`;
+    
+    const handleCopy = () => {
+        navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        alert("Result copied to clipboard!");
+    };
+
+    const shareLinks = [
+        { icon: Twitter, color: 'bg-sky-500', href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
+        { icon: Facebook, color: 'bg-blue-600', href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
+        { icon: Linkedin, color: 'bg-blue-700', href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}` },
+        { icon: MessageCircle, color: 'bg-green-500', href: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}` },
+        { icon: Mail, color: 'bg-red-500', href: `mailto:?subject=My Quiz Score&body=${encodeURIComponent(shareText + ' ' + shareUrl)}` },
+    ];
+
     return (
       <>
       {percentage === 100 && <Confetti />}
@@ -834,6 +851,30 @@ function App() {
             <div className="glass-panel p-4 rounded-2xl border-t border-slate-700">
                 <div className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Time</div>
                 <div className="text-lg font-bold text-cyan-400 pt-1">{config.timerSeconds === 0 ? 'OFF' : `${config.timerSeconds}s`}</div>
+            </div>
+        </div>
+        
+        {/* Share Section */}
+        <div className="glass-panel p-4 rounded-2xl border-t border-slate-700 mt-2">
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Share Result</p>
+            <div className="flex justify-center gap-3">
+                {shareLinks.map((link, i) => (
+                    <a 
+                        key={i} 
+                        href={link.href} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className={`w-10 h-10 flex items-center justify-center rounded-full text-white shadow-lg hover:scale-110 transition-transform ${link.color}`}
+                    >
+                        <link.icon size={18} />
+                    </a>
+                ))}
+                <button 
+                    onClick={handleCopy} 
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white shadow-lg hover:scale-110 transition-transform"
+                >
+                    <LinkIcon size={18} />
+                </button>
             </div>
         </div>
 
@@ -953,6 +994,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
