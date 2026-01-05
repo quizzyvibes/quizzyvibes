@@ -16,46 +16,94 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
         // Convert to JSON
         const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-        // Helper: Case-insensitive & trimmed key lookup
-        const getValue = (row: any, candidates: string[]): string | undefined => {
-             const rowKeys = Object.keys(row);
-             for (const candidate of candidates) {
-                 // 1. Exact match
-                 if (row[candidate] !== undefined && row[candidate] !== null) {
-                     return String(row[candidate]).trim();
+        if (jsonData.length === 0) {
+            reject(new Error("File appears to be empty"));
+            return;
+        }
+
+        // Helper: Robust key lookup
+        const getRowValue = (row: any, searchTerms: string[], allowPartial: boolean = false): string | undefined => {
+             const keys = Object.keys(row);
+             const searchLower = searchTerms.map(s => s.toLowerCase());
+
+             // 1. Exact Match
+             for (const key of keys) {
+                 const keyLower = key.toLowerCase().trim();
+                 if (searchLower.includes(keyLower)) {
+                     const val = row[key];
+                     if (val !== undefined && val !== null && String(val).trim() !== '') return String(val).trim();
                  }
-                 
-                 // 2. Fuzzy match (case insensitive, trimmed)
-                 const foundKey = rowKeys.find(k => k.toLowerCase().trim() === candidate.toLowerCase());
-                 if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
-                     return String(row[foundKey]).trim();
+             }
+
+             if (!allowPartial) return undefined;
+
+             // 2. Partial Match
+             for (const key of keys) {
+                 const keyLower = key.toLowerCase().trim();
+                 for (const term of searchLower) {
+                     if (keyLower.includes(term)) {
+                         const val = row[key];
+                         if (val !== undefined && val !== null && String(val).trim() !== '') return String(val).trim();
+                     }
                  }
              }
              return undefined;
         };
 
+        // Heuristic: Find explanation column by length if explicit lookup fails
+        // We look for a column that is NOT the question, answer, or option, but has long text.
+        const detectExplanationColumn = (rows: any[]): string | null => {
+            const sampleSize = Math.min(rows.length, 10);
+            const candidates: Record<string, number> = {};
+            const bannedKeys = ['question', 'text', 'option', 'answer', 'subject', 'difficulty', 'level', 'q', 'a', 'b', 'c', 'd', 'ans'];
+
+            for (let i = 0; i < sampleSize; i++) {
+                const row = rows[i];
+                Object.keys(row).forEach(key => {
+                    const keyLower = key.toLowerCase();
+                    // Skip known columns
+                    if (bannedKeys.some(b => keyLower.includes(b))) return;
+                    
+                    const val = String(row[key]);
+                    if (val.length > 15) { // Threshold for "explanation-like" text
+                        candidates[key] = (candidates[key] || 0) + 1;
+                    }
+                });
+            }
+
+            // Return the key with the most hits
+            let bestKey = null;
+            let maxHits = 0;
+            Object.entries(candidates).forEach(([key, hits]) => {
+                if (hits > maxHits) {
+                    maxHits = hits;
+                    bestKey = key;
+                }
+            });
+            return bestKey;
+        };
+
+        const heuristicExplanationKey = detectExplanationColumn(jsonData);
+
         // Map loosely to Question format
         const questions: Question[] = jsonData.map((row: any, index: number): Question | null => {
             
-            // 1. Text
-            const text = getValue(row, ['Question', 'question', 'Text', 'text', 'Q']);
+            let text = getRowValue(row, ['Question', 'question', 'Text', 'text', 'Q', 'Prompt'], false);
+            if (!text) text = getRowValue(row, ['Question', 'Text', 'Prompt'], true);
             
-            // 2. Options
             const options: string[] = [];
-            const optA = getValue(row, ['Option A', 'A', 'a', 'option1', 'Option 1']);
-            const optB = getValue(row, ['Option B', 'B', 'b', 'option2', 'Option 2']);
-            const optC = getValue(row, ['Option C', 'C', 'c', 'option3', 'Option 3']);
-            const optD = getValue(row, ['Option D', 'D', 'd', 'option4', 'Option 4']);
+            const optA = getRowValue(row, ['Option A', 'A', 'a', 'option1', 'Option 1'], true);
+            const optB = getRowValue(row, ['Option B', 'B', 'b', 'option2', 'Option 2'], true);
+            const optC = getRowValue(row, ['Option C', 'C', 'c', 'option3', 'Option 3'], true);
+            const optD = getRowValue(row, ['Option D', 'D', 'd', 'option4', 'Option 4'], true);
 
             if (optA) options.push(optA);
             if (optB) options.push(optB);
             if (optC) options.push(optC);
             if (optD) options.push(optD);
 
-            // 3. Correct Answer
-            let correctAnswer = getValue(row, ['Correct Answer', 'Answer', 'correct', 'answer', 'Ans']) || '';
+            let correctAnswer = getRowValue(row, ['Correct Answer', 'Answer', 'correct', 'answer', 'Ans', 'Key'], true) || '';
             
-            // Map single letter answers (A, B, C, D) to the actual text
             if (correctAnswer.length === 1 && /^[A-D]$/i.test(correctAnswer)) {
                 const map: {[key: string]: number} = {'A':0, 'B':1, 'C':2, 'D':3};
                 const idx = map[correctAnswer.toUpperCase()];
@@ -64,8 +112,8 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
                 }
             }
 
-            // 4. Subject Parsing
-            let rawSubject = getValue(row, ['Subject', 'subject', 'Topic', 'topic', 'Category']) || '';
+            // Subject
+            let rawSubject = getRowValue(row, ['Subject', 'subject', 'Topic', 'topic', 'Category'], true) || '';
             let subjectId = undefined;
             if (rawSubject) {
                 const s = rawSubject.toLowerCase();
@@ -77,8 +125,8 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
                 else if (s.includes('gen')) subjectId = 'gen';
             }
 
-            // 5. Difficulty Parsing
-            let rawDiff = getValue(row, ['Difficulty', 'difficulty', 'Level', 'level']) || '';
+            // Difficulty
+            let rawDiff = getRowValue(row, ['Difficulty', 'difficulty', 'Level', 'level'], true) || '';
             let difficulty = undefined;
             if (rawDiff) {
                 const d = rawDiff.toLowerCase();
@@ -87,10 +135,13 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
                 else if (d === 'hard' || d === '3') difficulty = Difficulty.HARD;
             }
             
-            // 6. Explanation Parsing (Robust Check)
-            const explanation = getValue(row, ['Explanation', 'explanation', 'Explain', 'explain', 'Reason', 'reason', 'Note']);
+            // Explanation: Explicit -> Fuzzy -> Heuristic
+            let explanation = getRowValue(row, ['Explanation', 'explain', 'Reason', 'reason', 'Note', 'Rationale', 'Feedback', 'Context', 'Description', 'Details', 'Info'], true);
+            
+            if (!explanation && heuristicExplanationKey && row[heuristicExplanationKey]) {
+                explanation = String(row[heuristicExplanationKey]).trim();
+            }
 
-            // Validation
             if (!text || options.length < 2 || !correctAnswer) {
                 return null;
             }
@@ -121,4 +172,5 @@ export const parseQuestionFile = async (file: File): Promise<Question[]> => {
     reader.readAsBinaryString(file);
   });
 };
+
 
