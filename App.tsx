@@ -4,7 +4,7 @@ import {
   Brain, ArrowRight, RefreshCw, Trophy, XCircle, Sparkles,
   Globe, FlaskConical, Utensils, Calculator, Cpu, AlertCircle, FileSpreadsheet, CheckCircle2,
   Cat, Rocket, HeartPulse, Music, Scroll, HelpCircle, Sprout, ChefHat, ChevronLeft, ChevronRight,
-  Share2, Link as LinkIcon, Facebook, Twitter, Linkedin, Mail, MessageCircle,
+  Share2, Link as LinkIcon, Facebook, Twitter, Mail, MessageCircle,
   Zap, Snowflake, Eye, Check, X, Search, HardDrive, ArrowUp, Info, PlayCircle
 } from 'lucide-react';
 
@@ -792,14 +792,34 @@ function App() {
     const subjectName = customQuestions && !hasCustomSubjects ? "Custom Quiz" : (SUBJECT_PRESETS.find(s => s.id === config.subject)?.name || config.subject);
     let message = percentage >= 80 ? "Outstanding!" : percentage >= 60 ? "Great Job!" : percentage >= 40 ? "Good Effort!" : "Keep trying!";
     
+    // Share Logic
+    const shareUrl = window.location.origin;
+    const shareText = `I scored ${percentage}% on the ${subjectName} challenge in QuizzyVibes! Can you beat me?`;
+    
+    const handleCopy = () => {
+        navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        alert("Result copied to clipboard!");
+    };
+
+    const shareLinks = [
+        { icon: Twitter, color: 'bg-sky-500', href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
+        { icon: Facebook, color: 'bg-blue-600', href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
+        { icon: MessageCircle, color: 'bg-green-500', href: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}` },
+        { icon: Mail, color: 'bg-red-500', href: `mailto:?subject=My Quiz Score&body=${encodeURIComponent(shareText + ' ' + shareUrl)}` },
+    ];
+
     return (
       <>
       {percentage === 100 && <Confetti />}
       <div className="max-w-2xl mx-auto w-full py-8 animate-slide-up text-center space-y-6 pt-24 relative z-10 px-4">
         
-        <div className="relative inline-block">
-            <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 rounded-full"></div>
-            <Trophy className={`w-12 h-12 mx-auto ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} relative z-10 drop-shadow-2xl`} />
+        <div className="flex justify-center gap-4 relative z-10 mb-2">
+            {[...Array(3)].map((_, i) => (
+                <div key={i} className="relative">
+                    <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 rounded-full"></div>
+                    <Trophy className={`w-12 h-12 ${percentage >= 60 ? 'text-yellow-400' : 'text-slate-500'} drop-shadow-xl`} />
+                </div>
+            ))}
         </div>
 
         {earnedBadges.length > 0 && (
@@ -836,12 +856,33 @@ function App() {
             </div>
         </div>
 
+        {/* Share Section - No Header, Just Icons */}
+        <div className="flex justify-center gap-4 mt-4">
+            {shareLinks.map((link, i) => (
+                <a 
+                    key={i} 
+                    href={link.href} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className={`w-10 h-10 flex items-center justify-center rounded-full text-white shadow-lg hover:scale-110 transition-transform ${link.color}`}
+                >
+                    <link.icon size={18} />
+                </a>
+            ))}
+            <button 
+                onClick={handleCopy} 
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white shadow-lg hover:scale-110 transition-transform"
+            >
+                <LinkIcon size={18} />
+            </button>
+        </div>
+
         <div className="flex flex-col gap-4 max-w-sm mx-auto w-full z-20 relative pt-4">
             <Button onClick={() => { setView('review'); window.scrollTo(0,0); }} className="w-full h-14 text-lg bg-indigo-600 hover:bg-indigo-500 border-0 shadow-lg shadow-indigo-500/30"><Eye className="mr-2" size={24} /> Review Answers</Button>
             
             <div className="flex gap-4 w-full">
                 <Button 
-                  onClick={resetQuiz} 
+                  onClick={handleStartQuiz} 
                   className="flex-1 h-14 text-lg font-bold bg-black border-2 border-slate-800 text-white hover:bg-slate-900 shadow-lg rounded-2xl"
                 >
                   <RefreshCw className="mr-3" size={24} /> Play Again
@@ -952,6 +993,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
