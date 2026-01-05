@@ -95,7 +95,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                 <UserIcon size={18} />
                 Continue as Guest
             </Button>
-            <p className="text-slate-500 text-[10px] text-center">
+            <p className="text-slate-500 text-[8px] text-center">
               Guest scores are stored temporarily. Sign in to save progress.
             </p>
         </div>
@@ -105,5 +105,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
 };
 
 export default AuthForm;
+
 
 
