@@ -660,7 +660,7 @@ function App() {
                 </button>
 
                 {(!config.subject && !customQuestions) && (
-                     <p className="text-center text-slate-500 text-sm mt-3 animate-pulse">Select a category to begin</p>
+                     <p className="text-center text-slate-500 text-sm mt-3 animate-pulse">Choose Your Subject at the top</p>
                 )}
               </div>
             </div>
@@ -994,6 +994,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
