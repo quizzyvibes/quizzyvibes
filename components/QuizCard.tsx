@@ -20,7 +20,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
         <div className="flex-shrink-0 mb-3 md:mb-5 relative z-10 bg-slate-950/50 border border-slate-700/50 rounded-2xl p-4 min-h-[140px] md:min-h-[120px] w-full md:max-w-4xl md:mx-auto flex items-center justify-center overflow-y-auto custom-scrollbar shadow-inner">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white leading-snug text-center">
+            <h2 className="text-lg md:text-xl lg:text-2xl font-display font-bold text-white leading-snug text-center">
                 {question.text}
             </h2>
         </div>
@@ -34,13 +34,13 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 
             if (showFeedback) {
               if (option === question.correctAnswer) {
-                buttonStyle += "bg-green-600/20 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]";
+                buttonStyle += "bg-green-600/20 border-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)] transform-none";
                 icon = <CheckCircle2 size={28} className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400" />;
               } else if (option === selectedAnswer && option !== question.correctAnswer) {
-                buttonStyle += "bg-red-600/20 border-red-500 text-red-200 opacity-90";
+                buttonStyle += "bg-red-600/20 border-red-500 text-red-200 opacity-90 transform-none";
                 icon = <AlertCircle size={28} className="absolute right-4 top-1/2 -translate-y-1/2 text-red-400" />;
               } else {
-                 buttonStyle += "opacity-40 bg-slate-900/20 border-slate-800 grayscale text-slate-500";
+                 buttonStyle += "opacity-40 bg-slate-900/20 border-slate-800 grayscale text-slate-500 transform-none";
               }
             } else if (selectedAnswer === option) {
               buttonStyle += "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/30";
@@ -57,7 +57,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
                 key={idx}
                 onClick={() => !showFeedback && onSelectAnswer(option)}
                 disabled={showFeedback}
-                className={`relative w-full py-4 pl-4 pr-12 md:pl-6 md:pr-16 rounded-xl text-left transition-all duration-200 flex items-center group ${buttonStyle}`}
+                className={`relative w-full py-4 pl-4 pr-12 md:pl-6 md:pr-16 rounded-xl text-left transition-all duration-200 flex items-center group ${buttonStyle} ${showFeedback ? 'cursor-default active:scale-100 hover:scale-100' : ''}`}
               >
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold mr-4 border-2 transition-colors ${
                    showFeedback && option === question.correctAnswer ? 'border-green-400 bg-green-500/20 text-green-300' : 
@@ -83,6 +83,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, selectedAnswer, onSelectA
 };
 
 export default QuizCard;
+
 
 
 
